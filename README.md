@@ -19,7 +19,7 @@
 
 ## 下載與執行
 
-- Windows 用戶可直接到 ([GitHub Release 區](https://github.com/duoduo-88/MSW-Skin-Fragmenter/releases/tag/v1.0.0)) 下載 exe 檔，解壓後雙擊執行，無需安裝 Python。
+- Windows 用戶可直接到 ([GitHub Release 區](https://github.com/duoduo-88/MSW-Skin-Fragmenter/releases/tag/v1.0.0](https://github.com/duoduo-88/MSW-Skin-Fragmenter/releases)) 下載 exe 檔，解壓後雙擊執行，無需安裝 Python。
 - 原始碼用戶請安裝 `requirements.txt`，然後執行 `python msw_skin_fragmenter.py`。
 
 ## 注意事項
