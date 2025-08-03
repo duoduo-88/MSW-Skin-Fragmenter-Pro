@@ -2,7 +2,6 @@
 
 本工具可將含透明區的 PNG 主圖隨機分割為多個碎片，並自動生成干擾像素，有效提升美術資源的防盜還原難度。支援碎片管理、還原預覽、ZIP 匯出與多項進階干擾合成功能。
 
----
 
 ## ✨ 主要功能
 
@@ -14,7 +13,6 @@
 - **ZIP 匯出**：碎片一鍵打包下載
 - **多核心加速**：大幅提升分割效能
 
----
 
 ## 💻 適用環境
 
@@ -22,12 +20,11 @@
 - Python 3.8+（原始碼版本）
 - 提供 EXE 免安裝版
 
----
 
 ## ⬇️ 下載與執行
 
 - **Windows 用戶**：  
-  至 [GitHub Release](https://github.com/duoduo-88/MSW-Skin-Fragmenter/releases) 下載 EXE 檔，解壓後雙擊執行，**無需安裝 Python**。
+  至 [GitHub Release]((https://github.com/duoduo-88/MSW-Skin-Fragmenter-Pro/releases)) 下載 EXE 檔，解壓後雙擊執行，**無需安裝 Python**。
 - **原始碼用戶**：  
   安裝相依套件：
   ```bash
