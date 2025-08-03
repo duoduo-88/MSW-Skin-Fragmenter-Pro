@@ -1,40 +1,55 @@
 # MSW 造型防盜拆解工具
 
-本工具可將含透明區的 PNG 主圖隨機分割為多個碎片，並能產生干擾像素，提升美術資源防盜還原難度。支援碎片管理、還原預覽、ZIP 匯出及進階干擾合成。
+本工具可將含透明區的 PNG 主圖隨機分割為多個碎片，並自動生成干擾像素，有效提升美術資源的防盜還原難度。支援碎片管理、還原預覽、ZIP 匯出與多項進階干擾合成功能。
 
-## 主要功能
+---
 
-- 載入主圖與遮罩，自訂分割參數，一鍵產生碎片
-- 支援重疊像素、碎片隨機度、聚合度等進階調整
-- 可產生干擾像素並一鍵套用到碎片
-- 碎片合併、複製、刪除、批次命名、排序
-- 支援碎片 ZIP 匯出及垃圾桶復原
-- 支援多核心加速
+## ✨ 主要功能
 
-## 適用環境
+- **主圖/遮罩載入**：支援遮罩分割與反轉，分割參數彈性調整
+- **碎片分割**：可設定碎片數量、重疊像素、隨機度、聚合度
+- **碎片管理**：合併、複製、刪除、批次命名、排序、垃圾桶復原
+- **進階干擾**：一鍵生成干擾像素，支援劣化處理與陷阱圖塊（可強化碎片不可逆）
+- **碎片還原預覽**：即時檢視還原結果
+- **ZIP 匯出**：碎片一鍵打包下載
+- **多核心加速**：大幅提升分割效能
+
+---
+
+## 💻 適用環境
 
 - Windows 10/11（建議 8GB 記憶體以上）
-- Python 3.8+（僅限原始碼版本）
-- EXE 免安裝直接執行
+- Python 3.8+（原始碼版本）
+- 提供 EXE 免安裝版
 
-## 下載與執行
+---
 
-- Windows 用戶可直接到 ([GitHub Release 區](https://github.com/duoduo-88/MSW-Skin-Fragmenter/releases/tag/v1.0.0](https://github.com/duoduo-88/MSW-Skin-Fragmenter/releases))) 下載 exe 檔，解壓後雙擊執行，無需安裝 Python。
-- 原始碼用戶請安裝 `requirements.txt`，然後執行 `python msw_skin_fragmenter.py`。
+## ⬇️ 下載與執行
 
-## 注意事項
+- **Windows 用戶**：  
+  至 [GitHub Release](https://github.com/duoduo-88/MSW-Skin-Fragmenter/releases) 下載 EXE 檔，解壓後雙擊執行，**無需安裝 Python**。
+- **原始碼用戶**：  
+  安裝相依套件：
+  ```bash
+  pip install -r requirements.txt
 
-- 圖片檔案過大或碎片數過多時，執行可能耗時或卡頓。
-- 強烈建議優先測試較小圖片與合理碎片數。
-- 本工具僅供學術、技術交流與防盜研究用途，請勿用於非法行為。  
-- EXE 版本若被 Windows Defender 誤判，請自行加入信任。
+執行：
 
-## 授權
+python msw_skin_fragmenter.py
 
-MIT License。使用者需自負風險，作者不負任何責任。
+⚠️ 注意事項
 
-作者：DuoDuo  
-發布：2025
+    若圖片過大或碎片數量過多，運算時間可能較長、甚至卡頓。
+
+    建議：請先以小圖或較少碎片測試功能與流程。
+
+    工具僅供學術、技術交流及防盜研究用途，請勿用於非法行為。
+
+    部分 Windows Defender 可能會誤判 EXE，請自行加入信任清單。
+
+📝 授權
+
+本專案採用 MIT License，使用者需自負風險，作者不承擔任何法律責任。
 
 MIT License
 
@@ -57,3 +72,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+作者：DuoDuo
+發布：2025
