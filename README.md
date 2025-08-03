@@ -35,7 +35,7 @@
 
 執行：
 
-python msw_skin_fragmenter.py
+python msw_skin_fragmenter_pro.py
 
 ⚠️ 注意事項
 
