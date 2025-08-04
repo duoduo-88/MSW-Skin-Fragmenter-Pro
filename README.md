@@ -19,14 +19,11 @@
 
 ## 下載與執行
 - **Windows 用戶**：  
-- 至 [GitHub Release]((https://github.com/duoduo-88/MSW-Skin-Fragmenter-Pro/releases))
-- 下載 EXE 檔，解壓後雙擊執行，**無需安裝 Python**。
+- 至 [GitHub Release]((https://github.com/duoduo-88/MSW-Skin-Fragmenter-Pro/releases))下載 EXE 檔，解壓後雙擊執行，**無需安裝 Python**。
 
 **原始碼用戶**：  
-- 安裝相依套件：
-- pip install -r requirements.txt
-- 執行：
-- python msw_skin_fragmenter_pro_v1.1.1.py
+- 安裝相依套件：pip install -r requirements.txt
+- 執行：python msw_skin_fragmenter_pro_v1.1.1.py
 
 ## 注意事項
 - 若圖片過大或碎片數量過多，運算時間可能較長、甚至卡頓。
