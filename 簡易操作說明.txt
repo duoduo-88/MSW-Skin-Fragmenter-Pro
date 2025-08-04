@@ -1,0 +1,136 @@
+MSW造型防盜拆解工具 專業版 MSW Skin Fragmenter Pro v1.1.1 
+----------------------------------------
+1. 軟體簡介
+
+MSW造型防盜拆解工具是一款專為繪師、遊戲開發者設計的圖像安全處理軟體。
+
+能將含有透明區的 PNG 圖片分割為多個不規則碎片、並可套用干擾像素、遮罩限制等多重防盜機制，大幅增加二次拼合及逆向還原難度。
+
+----------------------------------------
+2. 安裝方式
+
+需先安裝 Python 3.8+，建議 Windows 10/11 環境。
+
+進入命令提示字元（CMD），安裝依賴：pip install PySide6 numpy pillow
+
+下載本程式（例如 MSW Skin Fragmenter Pro v1.1.1.py）。
+
+雙擊圖標或者指令執行程式：python 8.py
+
+----------------------------------------
+3. 主要介面說明
+
+    主圖選擇：點選「選擇主圖」，載入你要防盜切割的 PNG 圖片（建議帶透明區域）。
+
+    遮罩選擇（可選）：可另外指定一張 PNG 遮罩，用來限制分割區域。
+
+    分割參數設定：可自訂碎片數、重疊率、隨機度、碎片尺寸、是否允許碎片重疊等。
+
+    碎片預覽：可即時預覽分割效果、縮放拖曳畫面，檢查碎片狀態。
+
+    碎片管理：碎片支援刪除、複製、批次命名、合併、垃圾桶復原等操作。
+
+    干擾像素：一鍵為碎片產生、套用原圖像素干擾，提升破解難度。
+
+    劣化處理：對已分割的碎片再進行畫質破壞、像素干擾、馬賽克、抹除、壓縮或疊加雜訊等加工處理。
+
+    匯出功能：可將所有碎片一鍵匯出為 ZIP 檔。
+
+----------------------------------------
+4. 基本操作流程
+
+A. 裝載主圖
+
+    點選「選擇主圖」→ 先把圖片轉存成PNG格式，選擇要拆解的造型 PNG 圖片載入。
+
+
+B. （選擇性）載入遮罩
+
+    可選「自定遮罩」，用遮罩 alpha>0 的區域作為可分割範圍。
+
+C. 設定分割參數
+
+    可調整：
+
+        碎片數量
+
+        隨機度、重疊比
+
+        碎片最小/最大尺寸
+
+D. 執行分割
+
+    點「執行拆解」，等待生成碎片。
+
+    可在右側「碎片管理」檢視、操作碎片等相關功能。
+
+E. 產生干擾像素
+
+    切換到「干擾像素」分頁，設定干擾參數（密度、區塊大小等）。
+
+    點擊「產生干擾像素」。
+
+    干擾圖會自動回到「碎片管理」檢查，點「合成到碎片」即可覆蓋套用。
+
+F. 匯出碎片
+
+    點擊「ZIP 匯出」可將所有碎片打包下載。
+
+----------------------------------------
+5. 其他注意事項
+
+    所有讀取/儲存檔案操作已內建容錯（try/except），避免崩潰。若讀檔失敗會彈窗提示。
+
+    支援多核心加速，但生成碎片/干擾圖仍需數秒，請耐心等待。
+
+    部分高參數組合（碎片數極高、干擾密度極大）會耗時較長。
+
+----------------------------------------
+6. 常見問題 FAQ
+
+    Q: 讀檔/存檔失敗怎麼辦？
+
+    A: 可能路徑有中文或權限問題，請選用英文資料夾再嘗試。
+
+
+    Q: 干擾像素產生很慢？
+
+    A: 嘗試調降「干擾密度」或「coverage」參數，或減少碎片數。
+
+
+    Q: 可以一次分割多張圖嗎？
+
+    A: 目前不支援批量，需一張一張操作。
+
+----------------------------------------
+7. 聯絡＆授權
+
+GitHub / 反饋建議：請在專案頁留言回饋。
+
+https://github.com/duoduo-88/MSW-Skin-Fragmenter-Pro/tree/main
+
+作者：DuoDuo　　發布：2025
+
+本專案採用 MIT License，使用者需自負風險，作者不承擔任何法律責任。
+
+MIT License
+
+Copyright (c) 2025 DuoDuo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
