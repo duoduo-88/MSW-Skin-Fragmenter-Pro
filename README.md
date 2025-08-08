@@ -1,61 +1,65 @@
-🎨 MSW 造型防盜拆解工具 | MSW Skin Fragmenter Pro
+# 🎨 MSW 造型防盜拆解工具 | MSW Skin Fragmenter Pro
 
-本工具可將含透明區的 PNG 主圖隨機分割為多個碎片，並自動生成干擾像素，有效提升美術資源的防盜還原難度。
+本工具可將含透明區的 PNG 主圖隨機分割為多個碎片，並自動生成干擾像素，有效提升美術資源的防盜還原難度。  
 This tool can randomly split a PNG image with transparent areas into multiple fragments and automatically generate interference pixels, effectively increasing the difficulty of restoring stolen artwork.
 
-支援碎片管理、還原預覽、ZIP 匯出與多項進階干擾合成功能。
+支援碎片管理、還原預覽、ZIP 匯出與多項進階干擾合成功能。  
 Supports fragment management, restoration preview, ZIP export, and multiple advanced interference blending features.
-✨ 主要功能 | Key Features
 
-    主圖/遮罩載入 | Main Image / Mask Loading
-    支援遮罩分割與反轉，分割參數彈性調整
-    Supports mask-based segmentation and inversion with flexible parameter adjustment
+---
 
-    碎片分割 | Fragment Splitting
-    可設定碎片數量、重疊像素、隨機度、聚合度
-    Adjustable number of fragments, overlapping pixels, randomness, and clustering
+## ✨ 主要功能 | Key Features
 
-    碎片管理 | Fragment Management
-    合併、複製、刪除、批次命名、排序、垃圾桶復原
-    Merge, copy, delete, batch rename, sort, and restore from trash bin
+- **主圖/遮罩載入** | **Main Image / Mask Loading**  
+  支援遮罩分割與反轉，分割參數彈性調整  
+  Supports mask-based segmentation and inversion with flexible parameter adjustment  
 
-    進階干擾 | Advanced Interference
-    一鍵生成干擾像素，支援劣化處理與陷阱圖塊（可強化碎片不可逆）
-    One-click generation of interference pixels, supports degradation and trap blocks (can enhance irreversibility)
+- **碎片分割** | **Fragment Splitting**  
+  可設定碎片數量、重疊像素、隨機度、聚合度  
+  Adjustable number of fragments, overlapping pixels, randomness, and clustering  
 
-    碎片還原預覽 | Restoration Preview
-    即時檢視還原結果
-    Instantly preview restoration results
+- **碎片管理** | **Fragment Management**  
+  合併、複製、刪除、批次命名、排序、垃圾桶復原  
+  Merge, copy, delete, batch rename, sort, and restore from trash bin  
 
-    ZIP 匯出 | ZIP Export
-    碎片一鍵打包下載
-    One-click export of all fragments
+- **進階干擾** | **Advanced Interference**  
+  一鍵生成干擾像素，支援劣化處理與陷阱圖塊（可強化碎片不可逆）  
+  One-click generation of interference pixels, supports degradation and trap blocks (can enhance irreversibility)  
 
-    多核心加速 | Multi-Core Acceleration
-    大幅提升分割效能
-    Significantly boosts splitting performance
+- **碎片還原預覽** | **Restoration Preview**  
+  即時檢視還原結果  
+  Instantly preview restoration results  
 
-🖥 適用環境 | System Requirements
+- **ZIP 匯出** | **ZIP Export**  
+  碎片一鍵打包下載  
+  One-click export of all fragments  
 
-    Windows 10/11（建議 8GB 記憶體以上）
-    Windows 10/11 (8GB RAM or more recommended)
+- **多核心加速** | **Multi-Core Acceleration**  
+  大幅提升分割效能  
+  Significantly boosts splitting performance  
 
-    Python 3.8+（原始碼版本）
-    Python 3.8+ (for source code version)
+---
 
-    提供 EXE 免安裝版
-    Portable EXE version available
+## 🖥 適用環境 | System Requirements
 
-📥 下載與執行 | Download & Run
-💻 Windows 用戶 | Windows Users
+- Windows 10/11（建議 8GB 記憶體以上）  
+  Windows 10/11 (8GB RAM or more recommended)  
+- Python 3.8+（原始碼版本）  
+  Python 3.8+ (for source code version)  
+- 提供 EXE 免安裝版  
+  Portable EXE version available  
 
-    至 GitHub Release 下載 EXE 檔，解壓後雙擊執行
-    Download the EXE file from GitHub Release, extract it, and double-click to run
+---
 
-    無需安裝 Python
-    No Python installation required
+## 📥 下載與執行 | Download & Run
 
-🛠 原始碼用戶 | Source Code Users
+### 💻 Windows 用戶 | Windows Users
+- 至 [GitHub Release](https://github.com/duoduo-88/MSW-Skin-Fragmenter-Pro/releases) 下載 EXE 檔，解壓後雙擊執行  
+  Download the EXE file from [GitHub Release](https://github.com/duoduo-88/MSW-Skin-Fragmenter-Pro/releases), extract it, and double-click to run  
+- **無需安裝 Python**  
+  **No Python installation required**
+
+### 🛠 原始碼用戶 | Source Code Users
 
 # 安裝相依套件 | Install dependencies
 pip install -r requirements.txt
@@ -85,7 +89,6 @@ python msw_skin_fragmenter_pro_v1.1.1.py
 
     參考密碼學 Kerckhoffs's Principle：「安全性應建立於輸入的不確定性，而非演算法本身」
     Based on Kerckhoffs's Principle in cryptography: "Security should depend on uncertainty of the input, not the secrecy of the algorithm"
-
 
 📜 授權 | License
 
