@@ -60,7 +60,7 @@ Supports fragment management, restoration preview, ZIP export, and multiple adva
   **No Python installation required**
 
 ### 🛠 原始碼用戶 | Source Code Users
-
+```bash
 # 安裝相依套件 | Install dependencies
 pip install -r requirements.txt
 
@@ -92,7 +92,20 @@ python msw_skin_fragmenter_pro_v1.1.1.py
 
 📜 授權 | License
 
+中文說明
 本專案採用 MIT License，使用者需自負風險，作者不承擔任何法律責任。
+
+MIT 授權條款
+
+著作權所有 (c) 2025 DuoDuo
+
+特此免費授權，允許任何取得本軟體與相關文件檔案（以下稱「軟體」）的人員，不受限制地處理本軟體，包括但不限於使用、複製、修改、合併、出版、發行、再授權及/或銷售本軟體副本，並允許本軟體提供者在符合以下條件的情況下也可這樣做：
+
+上述著作權聲明與本授權聲明應包含於本軟體的所有副本或主要部分中。
+
+本軟體是「按現狀」提供，不包含任何明示或暗示的保證，包括但不限於對適銷性、特定用途適用性及非侵權的保證。在任何情況下，作者或版權持有人不對因本軟體或本軟體的使用或其他交易而引起的任何索賠、損害或其他責任承擔責任，無論是在合約訴訟、侵權行為或其他方面。
+
+English
 This project is licensed under the MIT License. Use at your own risk; the author assumes no legal responsibility.
 
 MIT License
@@ -116,6 +129,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-作者：DuoDuo
-發布：2025
