@@ -69,6 +69,21 @@ python msw_skin_fragmenter_pro_v1.1.1.py
 
 ⚠ 注意事項 | Notes
 
+中文
+干擾像素與重疊像素功能非常重要，請盡可能優先使用。
+不要為了拆更多層碎片而犧牲這些功能的效果。
+如果缺乏干擾像素，現代的圖像偵測 AI 可以輕鬆還原碎片，降低防盜效果。
+
+English
+The functions of interference pixels and overlapping pixels are very important and should be prioritized whenever possible.
+Do not sacrifice these features just to split the image into more fragments.
+Without interference pixels, modern image detection AI can easily restore the fragments, reducing anti-theft effectiveness.
+
+한국어
+간섭 픽셀과 중첩 픽셀 기능은 매우 중요하므로 가능한 한 우선적으로 사용해야 합니다.
+더 많은 조각으로 나누기 위해 이 기능들을 희생하지 마세요.
+간섭 픽셀이 부족하면 최신 이미지 감지 AI가 쉽게 조각을 복원하여 방지 효과가 떨어질 수 있습니다.
+
     若圖片過大或碎片數量過多，運算時間可能較長、甚至卡頓
     Large images or too many fragments may cause longer processing times or lag
 
@@ -129,3 +144,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+作者：DuoDuo
+發布：2025
