@@ -1,4 +1,4 @@
-# 🎨 MSW 造型防盜拆解工具 | MSW Skin Fragmenter Pro
+# 🎨 MSW造型防盜拆解工具 專業版 | MSW Skin Fragmenter Pro
 
 本工具可將含透明區的 PNG 主圖隨機分割為多個碎片，並自動生成干擾像素，有效提升美術資源的防盜還原難度。  
 This tool can randomly split a PNG image with transparent areas into multiple fragments and automatically generate interference pixels, effectively increasing the difficulty of restoring stolen artwork.
