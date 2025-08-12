@@ -59,7 +59,7 @@
   - **無需安裝 Python**  
     **No Python installation required**
   
-  ### 🛠 原始碼用戶 | Source Code Users
+  ### 原始碼用戶 | Source Code Users
   
     # 安裝相依套件 | Install dependencies
     pip install -r requirements.txt
