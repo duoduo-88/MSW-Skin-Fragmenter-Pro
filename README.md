@@ -65,7 +65,7 @@
     pip install -r requirements.txt
     
     # 執行程式 | Run the program
-    python msw_skin_fragmenter_pro_v1.1.1.py
+    python msw_skin_fragmenter_pro_v1.1.4.py
 
 ---
 
