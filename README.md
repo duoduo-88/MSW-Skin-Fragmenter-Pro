@@ -71,7 +71,7 @@
 
 ## 注意事項 | Notes
 
-  干擾像素與重疊像素功能非常重要，請盡可能優先使用。不要為了拆更多層碎片而犧牲這些功能的效果。如果缺乏干擾像素，現代的圖像偵測 AI 可以輕鬆還原碎片，降低防盜效果。
+  干擾像素與重疊像素功能非常重要，請盡可能優先使用。不要為了拆更多層碎片而犧牲這些功能的效果。如果缺乏干擾像素，現代的圖像偵測 AI 可以輕鬆還原碎片，降低防盜效果。  
   The functions of interference pixels and overlapping pixels are very important and should be prioritized whenever possible.Do not sacrifice these features just to split the image into more fragments.Without interference pixels, modern image detection AI can easily restore the fragments, reducing anti-theft effectiveness.
   
   若圖片過大或碎片數量過多，運算時間可能較長、甚至卡頓  
@@ -125,7 +125,7 @@
   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
+  SOFTWARE.  
   
   作者：DuoDuo
   發布：2025
