@@ -74,25 +74,25 @@
   干擾像素與重疊像素功能非常重要，請盡可能優先使用。不要為了拆更多層碎片而犧牲這些功能的效果。如果缺乏干擾像素，現代的圖像偵測 AI 可以輕鬆還原碎片，降低防盜效果。
   The functions of interference pixels and overlapping pixels are very important and should be prioritized whenever possible.Do not sacrifice these features just to split the image into more fragments.Without interference pixels, modern image detection AI can easily restore the fragments, reducing anti-theft effectiveness.
   
-  若圖片過大或碎片數量過多，運算時間可能較長、甚至卡頓
+  若圖片過大或碎片數量過多，運算時間可能較長、甚至卡頓  
   Large images or too many fragments may cause longer processing times or lag
   
-  建議：請先以小圖或較少碎片測試功能與流程
+  建議：請先以小圖或較少碎片測試功能與流程  
   Recommendation: Test with smaller images or fewer fragments first
   
-  工具僅供學術、技術交流及防盜研究用途，請勿用於非法行為
+  工具僅供學術、技術交流及防盜研究用途，請勿用於非法行為  
   This tool is for academic, technical exchange, and anti-piracy research purposes only
   
-  部分 Windows Defender 可能會誤判 EXE，請自行加入信任清單
+  部分 Windows Defender 可能會誤判 EXE，請自行加入信任清單  
   Some Windows Defender versions may flag the EXE as suspicious; please add it to your trusted list
   
-  本工具僅於本地端執行，不會將圖片檔案上傳至網路
+  本工具僅於本地端執行，不會將圖片檔案上傳至網路  
   This tool runs locally and does not upload image files to the internet
   
-  防盜分割無法絕對保證圖片「不可還原」，安全性取決於主圖內容及參數配置
+  防盜分割無法絕對保證圖片「不可還原」，安全性取決於主圖內容及參數配置  
   Anti-piracy splitting cannot absolutely guarantee that the image is unrecoverable; security depends on image content and parameter configuration
   
-  參考密碼學 Kerckhoffs's Principle：「安全性應建立於輸入的不確定性，而非演算法本身」
+  參考密碼學 Kerckhoffs's Principle：「安全性應建立於輸入的不確定性，而非演算法本身」  
   Based on Kerckhoffs's Principle in cryptography: "Security should depend on uncertainty of the input, not the secrecy of the algorithm"
 
 ---
