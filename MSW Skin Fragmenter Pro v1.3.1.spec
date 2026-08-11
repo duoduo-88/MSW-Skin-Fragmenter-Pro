@@ -7,7 +7,7 @@ hiddenimports = collect_submodules("PIL") + collect_submodules("psd_tools")
 datas = collect_data_files("psd_tools")
 
 a = Analysis(
-    ["MSW Skin Fragmenter Pro v1.3.0.py"],
+    ["MSW Skin Fragmenter Pro v1.3.1.py"],
     pathex=[],
     binaries=[],
     datas=datas,
@@ -26,7 +26,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="MSW Skin Fragmenter Pro v1.3.0",
+    name="MSW Skin Fragmenter Pro v1.3.1",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -45,5 +45,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name="MSW Skin Fragmenter Pro v1.3.0",
+    name="MSW Skin Fragmenter Pro v1.3.1",
 )

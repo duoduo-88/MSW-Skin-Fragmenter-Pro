@@ -25,7 +25,7 @@ Download the packaged Windows build from [GitHub Releases](https://github.com/du
 - Pillow
 - psd-tools
 
-Dependencies are listed in `requirements.txt`. The application entry point is `MSW Skin Fragmenter Pro v1.3.0.py`.
+Dependencies are listed in `requirements.txt`. The application entry point is `MSW Skin Fragmenter Pro v1.3.1.py`.
 
 ## Important notice
 

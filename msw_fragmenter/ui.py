@@ -30,7 +30,13 @@ from .i18n import (
     tr,
 )
 from .psd_export import PsdExportDialog, PsdExportWorker
-from .workers import DegradePreviewThread, InterfereGenThread, OverlapThread, SplitThread
+from .workers import (
+    DegradePreviewThread,
+    DegradedFragmentArtifactThread,
+    InterfereGenThread,
+    OverlapThread,
+    SplitThread,
+)
 
 
 BG_OPTIONS = [
@@ -66,7 +72,21 @@ def freeze_form_label_column(form_layout):
             labels.append(widget)
     if not labels:
         return
-    width = max(label.sizeHint().width() for label in labels)
+    # QSS fonts may not be applied until polish; measuring before that makes
+    # Traditional-Chinese labels lose their final character after layout.
+    for label in labels:
+        label.ensurePolished()
+    widths = []
+    for label in labels:
+        styled_font = QtGui.QFont(label.font())
+        styled_font.setPixelSize(15)
+        styled_metrics = QtGui.QFontMetrics(styled_font)
+        widths.append(max(
+            label.sizeHint().width(),
+            label.fontMetrics().horizontalAdvance(label.text()),
+            styled_metrics.horizontalAdvance(label.text()),
+        ))
+    width = max(widths) + 8
     for label in labels:
         label.setFixedWidth(width)
 
@@ -94,14 +114,20 @@ def np2qpixmap(array):
     return pil2qpixmap(array)
 
 
-class QHelpButton(QtWidgets.QLabel):
+class QHelpButton(QtWidgets.QPushButton):
     def __init__(self, text):
-        super().__init__(" ? ")
-        self.setFixedSize(24, 24)
-        self.setAlignment(QtCore.Qt.AlignCenter)
+        super().__init__("?")
+        self.setFixedSize(28, 28)
+        self.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.setCursor(QtCore.Qt.PointingHandCursor)
         self.setStyleSheet("""
-            background: #555; color:#fff; font-weight:bold; font-size:16px;
-            border-radius:7px; border:1px solid #999; margin-left:3px; margin-right:3px;""")
+            QPushButton {
+                background:#343434; color:#eeeeee; border:1px solid #5c5c5c;
+                border-radius:4px; padding:0; font-weight:bold;
+            }
+            QPushButton:hover { background:#356f91; border-color:#72d1ff; }
+            QPushButton:pressed { background:#17445f; }
+        """)
         self.tip = text
         self.tipBox = None
     def showTip(self):
@@ -123,11 +149,19 @@ class QHelpButton(QtWidgets.QLabel):
         y = max(scr_geo.top()+8, y)
         self.tipBox.move(x, y)
         self.tipBox.show()
-    def enterEvent(self, e): self.showTip()
-    def leaveEvent(self, e): self.hideTip()
+    def enterEvent(self, e):
+        self.showTip()
+        super().enterEvent(e)
+    def leaveEvent(self, e):
+        self.hideTip()
+        super().leaveEvent(e)
     def mousePressEvent(self, e):
+        if e.button() != QtCore.Qt.LeftButton:
+            super().mousePressEvent(e)
+            return
         if self.tipBox and self.tipBox.isVisible(): self.hideTip()
         else: self.showTip()
+        super().mousePressEvent(e)
     def hideTip(self):
         if self.tipBox:
             self.tipBox.close()
@@ -175,7 +209,7 @@ class ImagePreview(QtWidgets.QLabel):
         self.bg_idx = 0
 
         self._scale = 1.0
-        self._max_scale = 2.0
+        self._max_scale = 8.0
         self.offset = QtCore.QPoint(0, 0)   # 平移偏移（widget 座標）
         self._drag_start = None             # 左鍵拖曳用
 
@@ -295,19 +329,36 @@ class ImagePreview(QtWidgets.QLabel):
             # 主圖
             if self.qimg is not None:
                 scale = min(self._scale, self._max_scale)
-                tgt_w = int(self.qimg.width()  * scale)
-                tgt_h = int(self.qimg.height() * scale)
-                pt = QtCore.QPoint(
-                    (self.width()  - tgt_w) // 2 + self.offset.x(),
-                    (self.height() - tgt_h) // 2 + self.offset.y()
-                )
-
-                if isinstance(self.qimg, QtGui.QPixmap):
-                    scaled = self.qimg.scaled(tgt_w, tgt_h, QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
-                    painter.drawPixmap(pt, scaled)
-                else:
-                    scaled = self.qimg.scaled(tgt_w, tgt_h, QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
-                    painter.drawImage(pt, scaled)
+                image_rect = self._image_widget_rect()
+                visible_rect = image_rect.intersected(QtCore.QRectF(self.rect()))
+                if scale > 0 and not visible_rect.isEmpty():
+                    source_rect = QtCore.QRectF(
+                        (visible_rect.left() - image_rect.left()) / scale,
+                        (visible_rect.top() - image_rect.top()) / scale,
+                        visible_rect.width() / scale,
+                        visible_rect.height() / scale,
+                    ).intersected(
+                        QtCore.QRectF(
+                            0.0,
+                            0.0,
+                            float(self.qimg.width()),
+                            float(self.qimg.height()),
+                        )
+                    )
+                    if not source_rect.isEmpty():
+                        target_rect = QtCore.QRectF(
+                            image_rect.left() + source_rect.left() * scale,
+                            image_rect.top() + source_rect.top() * scale,
+                            source_rect.width() * scale,
+                            source_rect.height() * scale,
+                        )
+                        painter.setRenderHint(
+                            QtGui.QPainter.SmoothPixmapTransform, False
+                        )
+                        if isinstance(self.qimg, QtGui.QPixmap):
+                            painter.drawPixmap(target_rect, self.qimg, source_rect)
+                        else:
+                            painter.drawImage(target_rect, self.qimg, source_rect)
 
                 # 垃圾桶高亮框（安全防護）
                 try:
@@ -444,8 +495,8 @@ class ImagePreviewWrap(QtWidgets.QWidget):
         super().__init__(parent)
         self.preview = ImagePreview(self)
         self.zoom_lbl = QtWidgets.QLabel("100%")
-        self.zoom_lbl.setStyleSheet("font-size:16px;font-weight:bold;min-width:55px;max-width:65px;")
-        self.zoom_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+        self.zoom_lbl.setStyleSheet("font-size:16px;font-weight:bold;min-width:72px;max-width:72px;")
+        self.zoom_lbl.setAlignment(QtCore.Qt.AlignCenter)
         self.zoom_down = QtWidgets.QPushButton("-")
         self.zoom_down.setFixedWidth(38)
         self.zoom_up = QtWidgets.QPushButton("+")
@@ -459,7 +510,7 @@ class ImagePreviewWrap(QtWidgets.QWidget):
         hz.addWidget(self.zoom_lbl)
         hz.addWidget(self.zoom_up)
         self.language_btn = QtWidgets.QPushButton("中 / EN")
-        self.language_btn.setFixedWidth(64)
+        self.language_btn.setFixedWidth(104)
         self.language_btn.setToolTip("切換繁體中文／English；不改變目前介面尺寸")
         self.language_btn.clicked.connect(parent.toggle_language)
         hz.addWidget(self.language_btn)
@@ -497,11 +548,13 @@ class ImagePreviewWrap(QtWidgets.QWidget):
                 self.parent().restore_overlay_off()
     def zoom_minus(self):
         self.preview._scale = max(0.05, self.preview._scale-0.05)
-        self.preview.repaint()
+        self.preview.update()
         self.update_zoom_display()
     def zoom_plus(self):
-        self.preview._scale = min(2.0, self.preview._scale+0.05)
-        self.preview.repaint()
+        self.preview._scale = min(
+            self.preview._max_scale, self.preview._scale + 0.05
+        )
+        self.preview.update()
         self.update_zoom_display()
     def update_zoom_display(self):
         val = int(self.preview._scale*100)
@@ -530,32 +583,30 @@ class InterferePanel(QtWidgets.QWidget):
         self.block_size.setValue(1)
         self.block_size.setFixedWidth(70)
         bs_tip = QHelpButton(
-            "設定每一個干擾像素塊的基本邊長(px)，越大則每塊越大。\n\n"
+            "可輸入範圍：1～30 px，預設 1 px。設定每一個干擾像素塊的基本邊長，越大則每塊越大。\n\n"
             "優點：大尺寸提升覆蓋速度。\n\n"
             "缺點：塊太大時，干擾效果會不自然且容易被辨識。"
         )
-        bs_tip.setFixedHeight(24)
         block_row = QtWidgets.QHBoxLayout()
         block_row.addWidget(self.block_size)
         block_row.addWidget(bs_tip)
         block_row.addStretch()
-        lay.addRow("干擾像素尺寸(1~30)：", block_row)
+        lay.addRow("干擾像素尺寸：", block_row)
 
         self.random_range = QtWidgets.QSpinBox()
         self.random_range.setRange(1, 100)
         self.random_range.setValue(6)
         self.random_range.setFixedWidth(70)
         rr_tip = QHelpButton(
-            "決定干擾像素塊的尺寸隨機變動範圍，1為固定，數字越大越亂。\n\n"
+            "可輸入範圍：1～100，預設 6。決定干擾像素塊的尺寸隨機變動範圍，1 為固定，數字越大越亂。\n\n"
             "優點：隨機性高提升防還原性。\n\n"
             "缺點：數值過大會產生極端尺寸、不均勻塊。"
         )
-        rr_tip.setFixedHeight(24)
         rand_row = QtWidgets.QHBoxLayout()
         rand_row.addWidget(self.random_range)
         rand_row.addWidget(rr_tip)
         rand_row.addStretch()
-        lay.addRow("尺寸隨機度(1~100)：", rand_row)
+        lay.addRow("尺寸隨機度：", rand_row)
 
         self.density = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.density.setRange(1, 100)
@@ -699,6 +750,7 @@ class DegradePanel(QtWidgets.QWidget):
             "此區用來製作干擾像素的劣化取樣圖。\n\n"
             "先匯入來源圖並調整下方劣化參數，再按「產生劣化預覽」；確認效果後按「掛載干擾像素」，"
             "全圖拆解與局部分割便會自動改用這張劣化圖取樣。\n\n"
+            "若要直接產生劣化碎片，可調整參數後按「製作劣化碎片」，不必先產生預覽。\n\n"
             "「還原原圖」只把左側預覽切回匯入的原始來源，不會解除已掛載的干擾像素；"
             "載入新主圖、匯入新來源或重新產生劣化預覽時，掛載狀態會自動重設。"
         )
@@ -806,6 +858,23 @@ class DegradePanel(QtWidgets.QWidget):
         btn_row.addWidget(self.restore_source_btn)
         btn_row.addWidget(self.apply_export_btn)
         lay.addRow(btn_row)
+
+        degraded_fragment_row = QtWidgets.QHBoxLayout()
+        self.make_fragments_btn = QtWidgets.QPushButton("製作劣化碎片")
+        self.make_fragments_btn.setFixedHeight(28)
+        self.make_fragments_btn.setEnabled(False)
+        self.make_fragments_btn.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
+        )
+        degraded_fragment_row.addWidget(self.make_fragments_btn, 1)
+        degraded_fragment_row.addWidget(QHelpButton(
+            "直接依目前劣化參數處理已匯入的來源圖，不必先產生劣化預覽；接著依現有遮罩與拆解參數"
+            "產生碎片。完成後會沿碎片外輪廓加入 1 px 缺口與錯位線段，合計影響約 20% 的拼接輪廓；"
+            "1 px 縫隙會用原像素的 60% Alpha 補齊；每張碎片本身也會向隨機方向整體錯位 1 px，"
+            "空位會用原邊緣像素延展補齊。"
+            "結果會直接放入碎片管理，原始主圖不會被取代。"
+        ))
+        lay.addRow(degraded_fragment_row)
         freeze_form_label_column(lay)
 
     def get_settings(self):
@@ -1132,6 +1201,9 @@ class MainWindow(QtWidgets.QWidget):
         self.degrade_panel.import_source_btn.clicked.connect(self.on_import_degrade_source)
         self.degrade_panel.gen_preview_btn.clicked.connect(self.on_generate_degrade_preview_shared)
         self.degrade_panel.apply_export_btn.clicked.connect(self.on_apply_degrade_source)
+        self.degrade_panel.make_fragments_btn.clicked.connect(
+            self.make_degraded_fragments
+        )
         self.degrade_panel.restore_source_btn.clicked.connect(self.on_restore_degrade_source)
 
         # 新增：監聽劣化參數改變以提示匯出未套用的預覽
@@ -1176,10 +1248,10 @@ class MainWindow(QtWidgets.QWidget):
         ff.addRow("主圖：", main_row)
         ff.addRow("", self.main_file_lbl)
 
-        self.mask_btn = QtWidgets.QPushButton("載入主體遮罩")
+        self.mask_btn = QtWidgets.QPushButton("載入")
         self.mask_btn.clicked.connect(self.load_mask)
-        self.mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
-        self.mask_btn.setMinimumWidth(150)
+        self.mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        self.mask_btn.setFixedWidth(90)
         self.del_mask_btn = QtWidgets.QPushButton("移除")
         self.del_mask_btn.clicked.connect(self.del_mask)
         self.del_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
@@ -1223,10 +1295,10 @@ class MainWindow(QtWidgets.QWidget):
         self.mask_file_lbl = ClickableFileLabel(self, 'mask')
         ff.addRow("", self.mask_file_lbl)
 
-        self.secondary_mask_btn = QtWidgets.QPushButton("載入次要遮罩")
+        self.secondary_mask_btn = QtWidgets.QPushButton("載入")
         self.secondary_mask_btn.clicked.connect(self.load_secondary_mask)
-        self.secondary_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
-        self.secondary_mask_btn.setMinimumWidth(150)
+        self.secondary_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        self.secondary_mask_btn.setFixedWidth(90)
         self.del_secondary_mask_btn = QtWidgets.QPushButton("移除")
         self.del_secondary_mask_btn.clicked.connect(self.del_secondary_mask)
         self.del_secondary_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
@@ -1271,35 +1343,35 @@ class MainWindow(QtWidgets.QWidget):
         self.rand_input = QtWidgets.QSpinBox(); self.rand_input.setRange(1,100); self.rand_input.setValue(6)
         ff2 = QtWidgets.QFormLayout()
         row1 = QtWidgets.QHBoxLayout(); row1.addWidget(self.num_input); row1.addWidget(QHelpButton(
-            "此數值就是最終碎片總數。設定 6 時，清單與匯出結果為碎片 1、2、3、4、5、6。"
+            "可輸入範圍：1～10。此數值就是最終碎片總數。設定 6 時，清單與匯出結果為碎片 1、2、3、4、5、6。"
         ))
-        ff2.addRow("分片數量(1~10)：", row1)
+        ff2.addRow("分片數量：", row1)
         row2 = QtWidgets.QHBoxLayout(); row2.addWidget(self.block_input); row2.addWidget(QHelpButton(
-            "定義分割的最小區塊（鏤空最小洞）的尺寸。數字越大，每個分割塊越大。單位：px\n\n優點：區塊大可提升運算速度、減少碎片數。\n\n缺點：太大會降低隱蔽度，過小可能造成卡頓。"
+            "可輸入範圍：1～30 px。定義分割的最小區塊（鏤空最小洞）的尺寸。數字越大，每個分割塊越大。\n\n優點：區塊大可提升運算速度、減少碎片數。\n\n缺點：太大會降低隱蔽度，過小可能造成卡頓。"
         ))
-        ff2.addRow("方塊尺寸(1~30)：", row2)
+        ff2.addRow("方塊尺寸：", row2)
         row3 = QtWidgets.QHBoxLayout(); row3.addWidget(self.rand_input); row3.addWidget(QHelpButton(
-            "區塊尺寸的隨機倍率範圍，1 代表所有區塊尺寸固定，2 代表區塊尺寸會隨機在設定值的 1~2 倍間變化。\n\n優點：提高碎片形狀隨機性，難以預測與還原。\n\n缺點：過高會造成計算量大增與碎片難以辨認。"
+            "可輸入範圍：1～100。區塊尺寸的隨機倍率範圍，1 代表所有區塊尺寸固定，2 代表區塊尺寸會隨機在設定值的 1～2 倍間變化。\n\n優點：提高碎片形狀隨機性，難以預測與還原。\n\n缺點：過高會造成計算量大增與碎片難以辨認。"
         ))
-        ff2.addRow("尺寸隨機度(1~100)：", row3)
+        ff2.addRow("尺寸隨機度：", row3)
         self.overlap_pixel_input = QtWidgets.QSpinBox()
         self.overlap_pixel_input.setRange(0, 100)
         self.overlap_pixel_input.setValue(1)
         row5 = QtWidgets.QHBoxLayout()
         row5.addWidget(self.overlap_pixel_input)
         row5.addWidget(QHelpButton(
-            "拆解後於鏤空區補原圖像素作為重疊像素。\n數值為聯集不透明像素的比例，依各碎片可填補區域分別回補。\n\n優點：增加還原難度，讓每片有干擾。\n\n缺點：比例過高會導致效能大幅下降、檔案變大。"
+            "可輸入範圍：0～100%。拆解後於鏤空區補原圖像素作為重疊像素。\n數值為聯集不透明像素的比例，依各碎片可填補區域分別回補。\n\n優點：增加還原難度，讓每片有干擾。\n\n缺點：比例過高會導致效能大幅下降、檔案變大。"
         ))
-        ff2.addRow("重疊像素比(0~100%)：", row5)
+        ff2.addRow("重疊像素比：", row5)
         self.aggregation_input = QtWidgets.QSpinBox()
         self.aggregation_input.setRange(1, 10)
         self.aggregation_input.setValue(5)
         row6 = QtWidgets.QHBoxLayout()
         row6.addWidget(self.aggregation_input)
         row6.addWidget(QHelpButton(
-            "調整回補的重疊像素聚集程度。1=最分散，10=最密集，預設5。\n\n優點：可調整碎片間重疊區域型態，提升反逆向性。\n\n缺點：極端值可能造成運算異常或不自然分佈。"
+            "可輸入範圍：1～10，預設 5。調整回補的重疊像素聚集程度；1 為最分散，10 為最密集。\n\n優點：可調整碎片間重疊區域型態，提升反逆向性。\n\n缺點：極端值可能造成運算異常或不自然分佈。"
         ))
-        ff2.addRow("重疊像素聚合(1~10)：", row6)
+        ff2.addRow("重疊像素聚合：", row6)
         freeze_form_label_column(ff2)
         right.addLayout(ff2)
 
@@ -1440,6 +1512,14 @@ class MainWindow(QtWidgets.QWidget):
         license_layout = QtWidgets.QFormLayout(license_group)
         license_layout.addRow("版本：", QtWidgets.QLabel(APP_VERSION))
         license_layout.addRow("作者：", QtWidgets.QLabel("DuoDuo"))
+        support_link = QtWidgets.QLabel(
+            '<a href="https://ko-fi.com/duoduo88" '
+            'style="color:#5ac8fa;">ko-fi.com/duoduo88</a>'
+        )
+        support_link.setOpenExternalLinks(True)
+        support_link.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
+        support_link.setToolTip("https://ko-fi.com/duoduo88")
+        license_layout.addRow("支持作者：", support_link)
         license_layout.addRow("開源授權：", QtWidgets.QLabel("MIT License"))
         license_layout.addRow("著作權：", QtWidgets.QLabel("© 2025 DuoDuo"))
         about_layout.addWidget(license_group)
@@ -2327,7 +2407,62 @@ class MainWindow(QtWidgets.QWidget):
         self.secondary_mask_file_lbl.setText("")
         self.set_status("已移除次要遮罩", True)
 
-    def split(self):
+    def split(self, *_):
+        self._start_split(self.main_img, degraded_mode=False)
+
+    def make_degraded_fragments(self, *_):
+        if getattr(self, "degrade_source_img", None) is None:
+            QtWidgets.QMessageBox.information(
+                self, "缺少劣化來源", "請先匯入劣化來源圖"
+            )
+            return
+        if getattr(self, "degrade_thread", None) and self.degrade_thread.isRunning():
+            self.set_status("劣化處理仍在執行中", False)
+            return
+
+        self._begin_fragment_progress(
+            "製作劣化碎片進度", "正在依目前參數處理劣化來源圖..."
+        )
+        self._set_fragment_progress_stage(0, 25)
+        self._split_start_time = time.time()
+        self.degrade_panel.gen_preview_btn.setEnabled(False)
+        self.degrade_panel.apply_export_btn.setEnabled(False)
+        self.degrade_panel.make_fragments_btn.setEnabled(False)
+        self.set_status("製作劣化碎片：正在套用目前劣化參數...", True)
+        source = self.degrade_source_img.copy()
+        self.degrade_thread = DegradePreviewThread(
+            source, self.degrade_panel.get_settings()
+        )
+        self.degrade_thread.progress.connect(self._fragment_progress_update)
+
+        def continue_with_split(degraded):
+            self.degrade_preview_pending = {
+                "orig": source.copy(),
+                "degraded": degraded.copy(),
+            }
+            self._start_split(
+                degraded, degraded_mode=True, reuse_progress=True
+            )
+
+        self.degrade_thread.result.connect(continue_with_split)
+        self.degrade_thread.start()
+
+    def _start_split(
+        self, split_source, degraded_mode=False, reuse_progress=False
+    ):
+        def restore_degraded_controls():
+            if not degraded_mode:
+                return
+            if reuse_progress:
+                self._finish_fragment_progress()
+            self.degrade_panel.gen_preview_btn.setEnabled(True)
+            self.degrade_panel.apply_export_btn.setEnabled(
+                bool(getattr(self, "degrade_preview_pending", None))
+            )
+            self.degrade_panel.make_fragments_btn.setEnabled(
+                self.degrade_source_img is not None
+            )
+
         danger_msgs = []
         # 方塊尺寸極小且重疊像素比例高（最危險組合）
         if self.block_input.value() <= 2 and self.rand_input.value() == 1 and self.overlap_pixel_input.value() > 2:
@@ -2366,11 +2501,18 @@ class MainWindow(QtWidgets.QWidget):
             )
             if reply != QtWidgets.QMessageBox.Yes:
                 self.set_status("已取消執行", False)
+                restore_degraded_controls()
                 return
 
-        if self.main_img is None:
-            self.set_status("請先載入主圖", False)
+        if split_source is None:
+            self.set_status(
+                "請先匯入劣化來源圖" if degraded_mode else "請先載入主圖",
+                False,
+            )
+            restore_degraded_controls()
             return
+        self._auto_degraded_fragment_mode = bool(degraded_mode)
+        self._auto_split_source = split_source.copy()
         has_primary_mask = self.mask_img is not None
         has_secondary_mask = self.secondary_mask_img is not None
 
@@ -2381,7 +2523,7 @@ class MainWindow(QtWidgets.QWidget):
         if self._auto_mask_workflow:
             try:
                 stages = build_mask_workflow_stages(
-                    self.main_img,
+                    self._auto_split_source,
                     self.mask_img,
                     self.secondary_mask_img if has_secondary_mask else None,
                     primary_overflow=self.primary_overflow_cb.isChecked(),
@@ -2391,10 +2533,11 @@ class MainWindow(QtWidgets.QWidget):
             except ValueError as exc:
                 self.set_status(str(exc), False)
                 QtWidgets.QMessageBox.warning(self, "遮罩無法使用", str(exc))
+                restore_degraded_controls()
                 return
         else:
             stages = None
-            inner_frame_source = self.main_img.copy()
+            inner_frame_source = self._auto_split_source.copy()
             split_mask = None
 
         if stages is not None:
@@ -2410,6 +2553,7 @@ class MainWindow(QtWidgets.QWidget):
             )
             if reply != QtWidgets.QMessageBox.Yes:
                 self.set_status("已取消拆解", False)
+                restore_degraded_controls()
                 return
             for name, img in self.fragment_data.items():
                 self.recycle_bin.append((name, img))
@@ -2433,19 +2577,27 @@ class MainWindow(QtWidgets.QWidget):
         self._auto_split_mask = split_mask
         self._auto_final_fragment_count = final_count
         self._auto_inner_fragment_count = split_piece_count
-        if self._auto_mask_workflow and final_count == 1:
+        if degraded_mode:
+            split_status = f"劣化碎片：正在產生 {final_count} 張碎片..."
+        elif self._auto_mask_workflow and final_count == 1:
             split_status = "遮罩拆解：正在建立唯一碎片..."
         elif self._auto_mask_workflow:
             split_status = f"遮罩拆解：正在產生碎片 2～{final_count}..."
         else:
             split_status = f"基本拆分：正在產生 {final_count} 張碎片..."
         self.set_status(split_status, True)
-        self._begin_fragment_progress("執行拆解進度", split_status)
-        self._set_fragment_progress_stage(0, 55)
+        if not reuse_progress:
+            self._begin_fragment_progress(
+                "製作劣化碎片進度" if degraded_mode else "執行拆解進度",
+                split_status,
+            )
+        self._auto_progress_range = (25, 100) if reuse_progress else (0, 100)
+        self._set_auto_progress_stage(0, 55)
         self.fragment_list.clear()
         self.fragment_data.clear()
         self.split_btn.setEnabled(False)
         self.partial_btn.setEnabled(False)
+        self.degrade_panel.make_fragments_btn.setEnabled(False)
         self.split_thread = SplitThread(
             inner_frame_source,
             split_mask,
@@ -2462,7 +2614,8 @@ class MainWindow(QtWidgets.QWidget):
         )
         self.split_thread.update_progress.connect(self._fragment_progress_update)
         self.split_thread.result.connect(self._auto_split_done)
-        self._split_start_time = time.time()
+        if not reuse_progress:
+            self._split_start_time = time.time()
         self.split_thread.start()
 
     def progress(self, done, total, msg):
@@ -2496,6 +2649,13 @@ class MainWindow(QtWidgets.QWidget):
             if message:
                 dialog.setLabelText(message)
 
+    def _set_auto_progress_stage(self, start, end, message=None):
+        range_start, range_end = getattr(self, "_auto_progress_range", (0, 100))
+        span = range_end - range_start
+        mapped_start = range_start + round(span * int(start) / 100)
+        mapped_end = range_start + round(span * int(end) / 100)
+        self._set_fragment_progress_stage(mapped_start, mapped_end, message)
+
     def _fragment_progress_update(self, done, total, message):
         start, end = getattr(self, "_fragment_progress_stage", (0, 100))
         fraction = min(1.0, max(0.0, done / total)) if total else 0.0
@@ -2527,6 +2687,9 @@ class MainWindow(QtWidgets.QWidget):
         if len(images) != expected_count:
             self.split_btn.setEnabled(True)
             self.partial_btn.setEnabled(True)
+            self.degrade_panel.make_fragments_btn.setEnabled(
+                self.degrade_source_img is not None
+            )
             self.set_status("分片產生失敗，請檢查遮罩與拆解參數", False)
             self._finish_fragment_progress()
             return
@@ -2537,7 +2700,7 @@ class MainWindow(QtWidgets.QWidget):
             return
 
         self.set_status("一鍵拆解：正在填充重疊像素...", True)
-        self._set_fragment_progress_stage(
+        self._set_auto_progress_stage(
             55, 75, "執行拆解：正在填充重疊像素..."
         )
         self.overlap_thread = OverlapThread(
@@ -2567,8 +2730,10 @@ class MainWindow(QtWidgets.QWidget):
         self.overlap_thread.start()
 
     def _start_auto_interference(self, inner_fragments):
-        self._set_fragment_progress_stage(
-            75, 100, "執行拆解：正在產生干擾像素..."
+        self._set_auto_progress_stage(
+            75,
+            92 if self._auto_degraded_fragment_mode else 100,
+            "執行拆解：正在產生干擾像素...",
         )
         if self._auto_mask_workflow:
             output_names = [
@@ -2591,20 +2756,27 @@ class MainWindow(QtWidgets.QWidget):
         worker_names = output_names
         snapshot_fragments = [image.copy() for image in worker_fragments]
         fragment_data = dict(zip(worker_names, worker_fragments))
-        source = (
-            self.interference_source_img
-            if self.interference_source_img is not None
-            else self.main_img
-        )
+        if self._auto_degraded_fragment_mode:
+            source = self._auto_split_source
+        else:
+            source = (
+                self.interference_source_img
+                if self.interference_source_img is not None
+                else self.main_img
+            )
 
         self._auto_output_names = output_names
         self._auto_worker_names = worker_names
         self._auto_worker_fragments = worker_fragments
         self._auto_snapshot_fragments = snapshot_fragments
         self.set_status(
-            "一鍵拆解：正在以掛載劣化圖產生干擾..."
-            if self.interference_source_img is not None
-            else "一鍵拆解：正在以主圖產生干擾...",
+            "劣化碎片：正在以劣化來源產生干擾..."
+            if self._auto_degraded_fragment_mode
+            else (
+                "一鍵拆解：正在以掛載劣化圖產生干擾..."
+                if self.interference_source_img is not None
+                else "一鍵拆解：正在以主圖產生干擾..."
+            ),
             True,
         )
         self.gen_thread = InterfereGenThread(
@@ -2654,6 +2826,71 @@ class MainWindow(QtWidgets.QWidget):
                 final_fragments.append(original)
         interference_target_count = max(0, len(final_fragments) - 2)
 
+        if self._auto_degraded_fragment_mode:
+            self._pending_degraded_fragment_result = {
+                "names": names,
+                "final_fragments": final_fragments,
+                "snapshot_fragments": snapshot_fragments,
+                "applied_count": applied_count,
+                "target_count": interference_target_count,
+            }
+            self._set_auto_progress_stage(
+                92, 100, "劣化碎片：正在加入輪廓缺口與錯位線段..."
+            )
+            self.degraded_artifact_thread = DegradedFragmentArtifactThread(
+                final_fragments, snapshot_fragments
+            )
+            self.degraded_artifact_thread.progress.connect(
+                self._fragment_progress_update
+            )
+            self.degraded_artifact_thread.result.connect(
+                self._degraded_fragment_artifacts_done
+            )
+            self.degraded_artifact_thread.start()
+            return
+
+        self._commit_auto_fragment_result(
+            names,
+            final_fragments,
+            snapshot_fragments,
+            applied_count,
+            interference_target_count,
+            degraded_mode=False,
+        )
+
+    def _degraded_fragment_artifacts_done(
+        self, final_fragments, snapshot_fragments
+    ):
+        pending = getattr(self, "_pending_degraded_fragment_result", None)
+        if not pending:
+            return
+        expected = len(pending["names"])
+        if len(final_fragments) != expected or len(snapshot_fragments) != expected:
+            self.set_status(
+                "輪廓線段處理失敗，已保留劣化拆解結果", False
+            )
+            final_fragments = pending["final_fragments"]
+            snapshot_fragments = pending["snapshot_fragments"]
+        self._commit_auto_fragment_result(
+            pending["names"],
+            final_fragments,
+            snapshot_fragments,
+            pending["applied_count"],
+            pending["target_count"],
+            degraded_mode=True,
+        )
+        self._pending_degraded_fragment_result = None
+
+    def _commit_auto_fragment_result(
+        self,
+        names,
+        final_fragments,
+        snapshot_fragments,
+        applied_count,
+        interference_target_count,
+        degraded_mode=False,
+    ):
+
         self.fragment_data = dict(zip(names, final_fragments))
         self.fragment_order = names
         self.fragment_visibility = {name: True for name in names}
@@ -2669,17 +2906,35 @@ class MainWindow(QtWidgets.QWidget):
         }
         self.split_btn.setEnabled(True)
         self.partial_btn.setEnabled(True)
+        self.degrade_panel.make_fragments_btn.setEnabled(
+            self.degrade_source_img is not None
+        )
+        if degraded_mode:
+            self.degrade_panel.gen_preview_btn.setEnabled(True)
+            self.degrade_panel.apply_export_btn.setEnabled(
+                bool(getattr(self, "degrade_preview_pending", None))
+            )
         self._finish_fragment_progress()
 
         elapsed = int(time.time() - getattr(self, "_split_start_time", time.time()))
-        source_text = "掛載劣化圖" if self.interference_source_img is not None else "主圖"
+        source_text = (
+            "劣化來源圖"
+            if degraded_mode
+            else ("掛載劣化圖" if self.interference_source_img is not None else "主圖")
+        )
         total_count = len(final_fragments)
         range_text = f"碎片 1～{total_count}"
         if applied_count == interference_target_count:
-            self.set_status(
-                f"拆解完成：{range_text}，共 {total_count} 張；干擾來源為{source_text}（{elapsed}秒）",
-                True,
-            )
+            if degraded_mode:
+                self.set_status(
+                    f"劣化碎片完成：{range_text}，共 {total_count} 張；已加入輪廓缺口與錯位線段（{elapsed}秒）",
+                    True,
+                )
+            else:
+                self.set_status(
+                    f"拆解完成：{range_text}，共 {total_count} 張；干擾來源為{source_text}（{elapsed}秒）",
+                    True,
+                )
         else:
             self.set_status(
                 f"已產生 {total_count} 張碎片，但只有 {applied_count}/{interference_target_count} 張成功套用干擾",
@@ -3187,6 +3442,7 @@ class MainWindow(QtWidgets.QWidget):
             "overlap_thread",
             "gen_thread",
             "degrade_thread",
+            "degraded_artifact_thread",
         ):
             th = getattr(self, attr, None)
             if th is not None and hasattr(th, "isRunning") and th.isRunning():
@@ -3410,6 +3666,7 @@ class MainWindow(QtWidgets.QWidget):
             self.degrade_preview_pending = None
             self._set_interference_source_mounted(False)
             self.degrade_panel.apply_export_btn.setEnabled(False)
+            self.degrade_panel.make_fragments_btn.setEnabled(True)
             self.img_wrap.preview.set_image(arr)
             self.set_status("已載入劣化來源圖", True)
             self.degrade_panel.set_imported_filename(fname)
@@ -3433,6 +3690,7 @@ class MainWindow(QtWidgets.QWidget):
             if reply != QtWidgets.QMessageBox.Yes:
                 return
             self.degrade_preview_pending = None
+            self.degrade_panel.make_fragments_btn.setEnabled(False)
 
         self._set_interference_source_mounted(False)
 
@@ -3445,6 +3703,7 @@ class MainWindow(QtWidgets.QWidget):
 
         self.degrade_panel.gen_preview_btn.setEnabled(False)
         self.degrade_panel.apply_export_btn.setEnabled(False)
+        self.degrade_panel.make_fragments_btn.setEnabled(False)
         self.set_status("正在產生劣化預覽...", True)
 
         self.degrade_thread = DegradePreviewThread(self.degrade_source_img, settings)
@@ -3456,6 +3715,7 @@ class MainWindow(QtWidgets.QWidget):
             self.set_status("劣化預覽（尚未掛載）", True)
             self.degrade_panel.gen_preview_btn.setEnabled(True)
             self.degrade_panel.apply_export_btn.setEnabled(True)
+            self.degrade_panel.make_fragments_btn.setEnabled(True)
 
         self.degrade_thread.result.connect(finish)
         self.degrade_thread.start()
@@ -3495,6 +3755,9 @@ class MainWindow(QtWidgets.QWidget):
             self.set_status("已取消劣化預覽", False)
             self.degrade_panel.gen_preview_btn.setEnabled(True)
             self.degrade_panel.apply_export_btn.setEnabled(False)
+            self.degrade_panel.make_fragments_btn.setEnabled(
+                self.degrade_source_img is not None
+            )
 
     def fragment_clicked(self, item):
         name = item.text()

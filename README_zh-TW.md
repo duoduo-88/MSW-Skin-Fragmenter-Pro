@@ -25,7 +25,7 @@ Windows 打包版本請至 [GitHub Releases](https://github.com/duoduo-88/MSW-Sk
 - Pillow
 - psd-tools
 
-相依套件列於 `requirements.txt`，程式入口為 `MSW Skin Fragmenter Pro v1.3.0.py`。
+相依套件列於 `requirements.txt`，程式入口為 `MSW Skin Fragmenter Pro v1.3.1.py`。
 
 ## 重要說明
 
