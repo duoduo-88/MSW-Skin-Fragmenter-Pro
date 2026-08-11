@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import unicodedata
@@ -266,11 +267,19 @@ class PsdExportWorker(QtCore.QThread):
 
 
 class PsdExportDialog(QtWidgets.QDialog):
-    def __init__(self, fragment_names, template_dir, default_prefix, parent=None):
+    SETTINGS_KEY = "psd_export/mapping_plans_v1"
+
+    def __init__(
+        self, fragment_names, template_dir, default_prefix, parent=None, settings=None
+    ):
         super().__init__(parent)
         self.fragment_names = list(fragment_names)
         self.template_dir = Path(template_dir)
         self.layer_cache = {}
+        self.settings = settings or QtCore.QSettings(
+            "DuoDuo", "MSW Skin Fragmenter Pro"
+        )
+        self.mapping_plans = self._read_mapping_plans()
         self.setWindowTitle("匯出 .psd 設定")
         self.resize(760, 460)
 
@@ -293,6 +302,20 @@ class PsdExportDialog(QtWidgets.QDialog):
         refresh_button.clicked.connect(self.reload_templates)
         folder_row.addWidget(refresh_button)
         layout.addLayout(folder_row)
+
+        plan_row = QtWidgets.QHBoxLayout()
+        plan_row.addWidget(QtWidgets.QLabel("方案："))
+        self.plan_combo = QtWidgets.QComboBox()
+        # User-entered plan names must never be translated.
+        self.plan_combo.setProperty("i18n_skip", True)
+        plan_row.addWidget(self.plan_combo, 1)
+        self.save_plan_button = QtWidgets.QPushButton("儲存方案")
+        self.save_plan_button.clicked.connect(self.save_mapping_plan)
+        plan_row.addWidget(self.save_plan_button)
+        self.delete_plan_button = QtWidgets.QPushButton("刪除方案")
+        self.delete_plan_button.clicked.connect(self.delete_mapping_plan)
+        plan_row.addWidget(self.delete_plan_button)
+        layout.addLayout(plan_row)
 
         self.table = QtWidgets.QTableWidget(len(self.fragment_names), 3)
         self.table.setHorizontalHeaderLabels(("碎片", "PSD 檔案", "PSD 圖層"))
@@ -334,7 +357,163 @@ class PsdExportDialog(QtWidgets.QDialog):
         buttons.rejected.connect(self.reject)
         self.export_button = buttons.button(QtWidgets.QDialogButtonBox.Ok)
         layout.addWidget(buttons)
+        self._reload_plan_combo()
+        self.plan_combo.currentIndexChanged.connect(self.apply_selected_plan)
         self.reload_templates()
+
+    def _read_mapping_plans(self):
+        raw = self.settings.value(self.SETTINGS_KEY, "")
+        if not raw:
+            return {}
+        try:
+            data = json.loads(str(raw))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return {}
+        if not isinstance(data, dict):
+            return {}
+        plans = {}
+        for name, plan in data.items():
+            rows = plan.get("rows", []) if isinstance(plan, dict) else []
+            if not isinstance(name, str) or not name.strip() or not isinstance(rows, list):
+                continue
+            clean_rows = []
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                template_name = row.get("template_name")
+                target_key = row.get("target_key")
+                if isinstance(template_name, str) and isinstance(target_key, str):
+                    clean_rows.append(
+                        {"template_name": template_name, "target_key": target_key}
+                    )
+            plans[name] = {"rows": clean_rows}
+        return plans
+
+    def _write_mapping_plans(self):
+        self.settings.setValue(
+            self.SETTINGS_KEY,
+            json.dumps(self.mapping_plans, ensure_ascii=False, separators=(",", ":")),
+        )
+        self.settings.sync()
+
+    def _reload_plan_combo(self, selected_name=""):
+        self.plan_combo.blockSignals(True)
+        self.plan_combo.clear()
+        self.plan_combo.addItem("—", "")
+        for name in sorted(self.mapping_plans, key=str.casefold):
+            self.plan_combo.addItem(name, name)
+        index = self.plan_combo.findData(selected_name)
+        self.plan_combo.setCurrentIndex(index if index >= 0 else 0)
+        self.plan_combo.blockSignals(False)
+        self.delete_plan_button.setEnabled(bool(self.plan_combo.currentData()))
+
+    def _current_mapping_rows(self):
+        rows = []
+        for row in range(self.table.rowCount()):
+            template_path = self.table.cellWidget(row, 1).currentData()
+            target_key = self.table.cellWidget(row, 2).currentData()
+            if not template_path or target_key is None:
+                raise ValueError(
+                    f"「{self.fragment_names[row]}」尚未完整選擇 PSD 檔案與圖層"
+                )
+            rows.append(
+                {
+                    "template_name": Path(template_path).name,
+                    "target_key": str(target_key),
+                }
+            )
+        return rows
+
+    def save_mapping_plan(self):
+        try:
+            rows = self._current_mapping_rows()
+        except ValueError as exc:
+            QtWidgets.QMessageBox.warning(self, "儲存方案", str(exc))
+            return
+        current_name = str(self.plan_combo.currentData() or "")
+        name, accepted = QtWidgets.QInputDialog.getText(
+            self,
+            "儲存方案",
+            "方案名稱：",
+            QtWidgets.QLineEdit.Normal,
+            current_name,
+        )
+        name = name.strip()
+        if not accepted or not name:
+            return
+        if name in self.mapping_plans:
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "覆蓋方案",
+                f"方案「{name}」已存在，是否覆蓋？",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No,
+            )
+            if reply != QtWidgets.QMessageBox.Yes:
+                return
+        self.mapping_plans[name] = {"rows": rows}
+        self._write_mapping_plans()
+        self._reload_plan_combo(name)
+        self.message_label.setText(f"已儲存方案「{name}」，共 {len(rows)} 個碎片對應。")
+
+    def delete_mapping_plan(self):
+        name = str(self.plan_combo.currentData() or "")
+        if not name:
+            return
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "刪除方案",
+            f"確定要刪除方案「{name}」嗎？",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No,
+        )
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+        self.mapping_plans.pop(name, None)
+        self._write_mapping_plans()
+        self._reload_plan_combo()
+        self.message_label.setText(f"已刪除方案「{name}」。")
+
+    def apply_selected_plan(self):
+        name = str(self.plan_combo.currentData() or "")
+        self.delete_plan_button.setEnabled(bool(name))
+        if not name:
+            return
+        rows = self.mapping_plans.get(name, {}).get("rows", [])
+        missing = []
+        applied = 0
+        for row_index, saved in enumerate(rows[: self.table.rowCount()]):
+            template_combo = self.table.cellWidget(row_index, 1)
+            template_index = -1
+            for index in range(template_combo.count()):
+                path = template_combo.itemData(index)
+                if path and Path(path).name == saved.get("template_name"):
+                    template_index = index
+                    break
+            if template_index < 0:
+                missing.append(saved.get("template_name", "?"))
+                continue
+            template_combo.setCurrentIndex(template_index)
+            layer_combo = self.table.cellWidget(row_index, 2)
+            layer_index = layer_combo.findData(saved.get("target_key"))
+            if layer_index < 0:
+                missing.append(
+                    f"{saved.get('template_name', '?')} / {saved.get('target_key', '?')}"
+                )
+                continue
+            layer_combo.setCurrentIndex(layer_index)
+            applied += 1
+        if len(rows) != self.table.rowCount():
+            missing.append(
+                f"方案列數 {len(rows)}／目前碎片 {self.table.rowCount()}"
+            )
+        if missing:
+            self.message_label.setText(
+                f"已套用方案「{name}」的 {applied} 列；部分對應不存在："
+                + "、".join(missing)
+            )
+        else:
+            self.message_label.setText(f"已套用方案「{name}」，共 {applied} 個碎片對應。")
 
     def open_template_folder(self):
         self.template_dir.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,11 @@ import numpy as np
 from PySide6 import QtCore
 from PySide6.QtCore import QThread, Signal
 
-from .degrade import degrade_chunk_worker, simple_block_degrade
+from .degrade import (
+    apply_subtle_fragment_artifacts,
+    degrade_chunk_worker,
+    simple_block_degrade,
+)
 from .fragmentation import (
     apply_overlap_to_all_fragments,
     split_fragments,
@@ -89,6 +93,37 @@ class SplitThread(QtCore.QThread):
             print(f"[SplitThread Exception]: {exc}")
             if not self._abort_event.is_set():
                 self.result.emit([])
+
+
+class DegradedFragmentArtifactThread(QtCore.QThread):
+    progress = QtCore.Signal(int, int, str)
+    result = QtCore.Signal(list, list)
+
+    def __init__(self, fragments, reference_fragments, seed=None):
+        super().__init__()
+        self.fragments = fragments
+        self.reference_fragments = reference_fragments
+        self.seed = int(seed) if seed is not None else secrets.randbits(64)
+        self._abort_event = threading.Event()
+
+    def abort(self):
+        self._abort_event.set()
+
+    def run(self):
+        try:
+            fragments, references = apply_subtle_fragment_artifacts(
+                self.fragments,
+                self.reference_fragments,
+                seed=self.seed,
+                progress_cb=self.progress.emit,
+                abort_cb=self._abort_event.is_set,
+            )
+            if not self._abort_event.is_set():
+                self.result.emit(fragments, references)
+        except Exception as exc:
+            print(f"[DegradedFragmentArtifactThread Exception]: {exc}")
+            if not self._abort_event.is_set():
+                self.result.emit([], [])
 
 
 class OverlapThread(QThread):

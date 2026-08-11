@@ -36,6 +36,7 @@ EXACT_EN = {
     "載入主體遮罩": "Load Primary",
     "主體遮罩：": "Primary:",
     "載入次要遮罩": "Load Secondary",
+    "載入": "Load",
     "次要遮罩：": "Secondary:",
     "移除": "Remove",
     "反轉": "Invert",
@@ -46,6 +47,9 @@ EXACT_EN = {
     "尺寸隨機度(1~100)：": "Random (1–100):",
     "重疊像素比(0~100%)：": "Overlap (0–100%):",
     "重疊像素聚合(1~10)：": "Cluster (1–10):",
+    "分片數量：": "Count:",
+    "重疊像素比：": "Overlap:",
+    "重疊像素聚合：": "Cluster:",
     "執行拆解": "Split",
     "局部分割": "Split Area",
     "還原初始分割": "Restore",
@@ -75,8 +79,14 @@ EXACT_EN = {
     "匯出選擇碎片": "Export Selected",
     "匯出全部碎片": "Export All",
     "匯出 .psd": "Export .psd",
+    "方案：": "Plan:",
+    "儲存方案": "Save Plan",
+    "刪除方案": "Delete Plan",
+    "方案名稱：": "Plan name:",
+    "覆蓋方案": "Overwrite Plan",
     # Interference panel.
     "干擾像素尺寸(1~30)：": "Block Size (1–30):",
+    "干擾像素尺寸：": "Block:",
     "干擾密度：5%": "Density: 5%",
     "取樣不透明度下限：1%": "Sample Alpha Min: 1%",
     "取樣不透明度上限：100%": "Sample Alpha Max: 100%",
@@ -86,17 +96,23 @@ EXACT_EN = {
     # Degrade panel.
     "匯入來源圖": "Load Source",
     "尚未載入任何圖": "No image loaded",
-    "目前來源：": "Source:",
-    "方塊尺寸：": "Block Size:",
-    "尺寸隨機度：": "Size Random:",
+    "目前來源：": "Src:",
+    "方塊尺寸：": "Block:",
+    "尺寸隨機度：": "Rand:",
     "劣化密度：70%": "Density: 70%",
     "噪點強度：10%": "Noise: 10%",
     "隨機明暗：10%": "Brightness: 10%",
     "色偏強度：10%": "Color Shift: 10%",
     "產生劣化預覽": "Preview",
-    "還原原圖": "Show Original",
-    "掛載干擾像素": "Mount Sample",
-    "已掛載干擾像素": "Sample Mounted",
+    "還原原圖": "Orig.",
+    "掛載干擾像素": "Mount",
+    "已掛載干擾像素": "Mounted",
+    "製作劣化碎片": "Make Degraded Fragments",
+    "製作劣化碎片進度": "Degraded Fragment Progress",
+    "缺少劣化來源": "Degradation Source Required",
+    "劣化處理仍在執行中": "Degradation is still running",
+    "正在依目前參數處理劣化來源圖...": "Applying current degradation settings...",
+    "製作劣化碎片：正在套用目前劣化參數...": "Degraded fragments: applying current settings...",
     # Trash and About.
     "垃圾桶 (可復原, 最多99項)": "Trash (restorable, max 99)",
     "復原選擇碎片": "Restore Selected",
@@ -106,6 +122,7 @@ EXACT_EN = {
     "版本與授權": "Version and License",
     "版本：": "Version:",
     "作者：": "Author:",
+    "支持作者：": "Support:",
     "開源授權：": "License:",
     "著作權：": "Copyright:",
     # PSD dialog.
@@ -214,6 +231,20 @@ EXACT_EN.update({
         "Fills transparent cutouts with source pixels after splitting. The value is a percentage of the union of opaque pixels and is applied to each fragment's available fill area.\n\nBenefit: makes reconstruction harder.\n\nTrade-off: high values reduce performance and increase file size.",
     "調整回補的重疊像素聚集程度。1=最分散，10=最密集，預設5。\n\n優點：可調整碎片間重疊區域型態，提升反逆向性。\n\n缺點：極端值可能造成運算異常或不自然分佈。":
         "Controls clustering of filled overlap pixels. 1 is most dispersed, 10 most clustered; default is 5.\n\nBenefit: varies overlap patterns.\n\nTrade-off: extreme values may look unnatural or process poorly.",
+    "可輸入範圍：1～10。此數值就是最終碎片總數。設定 6 時，清單與匯出結果為碎片 1、2、3、4、5、6。":
+        "Input range: 1–10. This is the final fragment count. A value of 6 produces Fragment 1 through Fragment 6 in the list and exports.",
+    "可輸入範圍：1～30 px。定義分割的最小區塊（鏤空最小洞）的尺寸。數字越大，每個分割塊越大。\n\n優點：區塊大可提升運算速度、減少碎片數。\n\n缺點：太大會降低隱蔽度，過小可能造成卡頓。":
+        "Input range: 1–30 px. Sets the minimum split-block (smallest cutout) size. Larger values produce larger blocks.\n\nBenefit: faster processing and fewer regions.\n\nTrade-off: large blocks reduce concealment; very small blocks may cause slowdowns.",
+    "可輸入範圍：1～100。區塊尺寸的隨機倍率範圍，1 代表所有區塊尺寸固定，2 代表區塊尺寸會隨機在設定值的 1～2 倍間變化。\n\n優點：提高碎片形狀隨機性，難以預測與還原。\n\n缺點：過高會造成計算量大增與碎片難以辨認。":
+        "Input range: 1–100. Random multiplier for split-block size. 1 keeps every block fixed; 2 varies blocks between 1× and 2× the base size.\n\nBenefit: less predictable shapes.\n\nTrade-off: high values increase work and make fragments harder to inspect.",
+    "可輸入範圍：0～100%。拆解後於鏤空區補原圖像素作為重疊像素。\n數值為聯集不透明像素的比例，依各碎片可填補區域分別回補。\n\n優點：增加還原難度，讓每片有干擾。\n\n缺點：比例過高會導致效能大幅下降、檔案變大。":
+        "Input range: 0–100%. Fills transparent cutouts with source pixels after splitting. The value is a percentage of the union of opaque pixels and is applied to each fragment's available fill area.\n\nBenefit: makes reconstruction harder.\n\nTrade-off: high values reduce performance and increase file size.",
+    "可輸入範圍：1～10，預設 5。調整回補的重疊像素聚集程度；1 為最分散，10 為最密集。\n\n優點：可調整碎片間重疊區域型態，提升反逆向性。\n\n缺點：極端值可能造成運算異常或不自然分佈。":
+        "Input range: 1–10; default: 5. Controls clustering of filled overlap pixels. 1 is most dispersed and 10 is most clustered.\n\nBenefit: varies overlap patterns.\n\nTrade-off: extreme values may look unnatural or process poorly.",
+    "可輸入範圍：1～30 px，預設 1 px。設定每一個干擾像素塊的基本邊長，越大則每塊越大。\n\n優點：大尺寸提升覆蓋速度。\n\n缺點：塊太大時，干擾效果會不自然且容易被辨識。":
+        "Input range: 1–30 px; default: 1 px. Sets the base edge length of each interference block. Larger values create larger blocks.\n\nBenefit: faster coverage.\n\nTrade-off: very large blocks can look unnatural and become easier to identify.",
+    "可輸入範圍：1～100，預設 6。決定干擾像素塊的尺寸隨機變動範圍，1 為固定，數字越大越亂。\n\n優點：隨機性高提升防還原性。\n\n缺點：數值過大會產生極端尺寸、不均勻塊。":
+        "Input range: 1–100; default: 6. Controls interference-block size variation. 1 is fixed; higher values increase variation.\n\nBenefit: less predictable fragments.\n\nTrade-off: extreme values produce uneven block sizes.",
     "設定每一個干擾像素塊的基本邊長(px)，越大則每塊越大。\n\n優點：大尺寸提升覆蓋速度。\n\n缺點：塊太大時，干擾效果會不自然且容易被辨識。":
         "Sets the base edge length (px) of each interference block. Larger values create larger blocks.\n\nBenefit: faster coverage.\n\nTrade-off: very large blocks can look unnatural and become easier to identify.",
     "決定干擾像素塊的尺寸隨機變動範圍，1為固定，數字越大越亂。\n\n優點：隨機性高提升防還原性。\n\n缺點：數值過大會產生極端尺寸、不均勻塊。":
@@ -232,8 +263,18 @@ EXACT_EN.update({
         "Interference is sampled from the current source image, or from the mounted degraded image when available. The first list item receives no interference and is never a generation scope. The second has no eligible earlier scope and remains unchanged. From the third item onward, one or more items between the second and the current item's predecessor are selected at random; their combined alpha defines the generation scope.",
     "此區用來製作干擾像素的劣化取樣圖。\n\n先匯入來源圖並調整下方劣化參數，再按「產生劣化預覽」；確認效果後按「掛載干擾像素」，全圖拆解與局部分割便會自動改用這張劣化圖取樣。\n\n「還原原圖」只把左側預覽切回匯入的原始來源，不會解除已掛載的干擾像素；載入新主圖、匯入新來源或重新產生劣化預覽時，掛載狀態會自動重設。":
         "Creates a degraded sampling image for interference.\n\nLoad a source, adjust the degradation settings, then choose Preview. After confirming the result, choose Mount Sample; full and area splitting will sample from the degraded image automatically.\n\nShow Original only changes the left preview and does not unmount the sample. Loading a new main image or source, or regenerating the preview, resets the mounted state.",
+    "此區用來製作干擾像素的劣化取樣圖。\n\n先匯入來源圖並調整下方劣化參數，再按「產生劣化預覽」；確認效果後按「掛載干擾像素」，全圖拆解與局部分割便會自動改用這張劣化圖取樣。\n\n若要直接產生劣化碎片，可調整參數後按「製作劣化碎片」，不必先產生預覽。\n\n「還原原圖」只把左側預覽切回匯入的原始來源，不會解除已掛載的干擾像素；載入新主圖、匯入新來源或重新產生劣化預覽時，掛載狀態會自動重設。":
+        "Creates a degraded sampling image for interference.\n\nLoad a source, adjust the degradation settings, then choose Preview. After confirming the result, choose Mount; full and area splitting will sample from it automatically.\n\nTo directly create degraded fragments, adjust the settings and choose Make Degraded Fragments; no preview is required.\n\nOrig. only changes the left preview and does not unmount the sample. Loading a new main image or source, or regenerating the preview, resets the mounted state.",
     "劣化方塊的基本尺寸（px），整張圖會以變動大小的方塊切割後個別劣化。":
         "Base degradation block size in pixels. The image is divided into varying blocks and each block is degraded independently.",
+    "使用目前劣化預覽作為拆解來源，依現有遮罩與拆解參數產生碎片；完成後只在碎片拼接邊界隨機加入少量 1 px 縫隙與 1 px 局部錯位。結果會直接放入碎片管理，原始主圖不會被取代。":
+        "Uses the current degraded preview as the split source with the active masks and split settings. It then adds sparse 1 px gaps and local 1 px offsets only along fragment seams. Results are placed directly in Fragments without replacing the original source image.",
+    "直接依目前劣化參數處理已匯入的來源圖，不必先產生劣化預覽；接著依現有遮罩與拆解參數產生碎片。完成後會沿碎片外輪廓隨機加入較多的 1 px 缺口線段與 1 px 錯位線段。結果會直接放入碎片管理，原始主圖不會被取代。":
+        "Directly applies the current degradation settings to the imported source; no preview is required. It then uses the active masks and split settings. More 1 px gap segments and 1 px offset segments are added along fragment outlines. Results go directly to Fragments without replacing the original source.",
+    "直接依目前劣化參數處理已匯入的來源圖，不必先產生劣化預覽；接著依現有遮罩與拆解參數產生碎片。完成後會沿碎片外輪廓加入 1 px 缺口與錯位線段，合計影響約 20% 的拼接輪廓。結果會直接放入碎片管理，原始主圖不會被取代。":
+        "Directly applies the current degradation settings to the imported source; no preview is required. It then uses the active masks and split settings. Combined 1 px gap and offset segments affect about 20% of fragment seams. Results go directly to Fragments without replacing the original source.",
+    "直接依目前劣化參數處理已匯入的來源圖，不必先產生劣化預覽；接著依現有遮罩與拆解參數產生碎片。完成後會沿碎片外輪廓加入 1 px 缺口與錯位線段，合計影響約 20% 的拼接輪廓；1 px 縫隙會用原像素的 60% Alpha 補齊；每張碎片本身也會向隨機方向整體錯位 1 px，空位會用原邊緣像素延展補齊。結果會直接放入碎片管理，原始主圖不會被取代。":
+        "Directly applies the current degradation settings to the imported source; no preview is required. It then uses the active masks and split settings. Combined 1 px gap and offset segments affect about 20% of fragment seams; the original pixels are restored there at 60% alpha. Every fragment is also shifted as a whole by 1 px in a random direction, and vacated areas are filled by extending the original edge pixels. Results go directly to Fragments without replacing the original source.",
     "控制整張圖中要放多少塊進行劣化（影響劣化區塊數量）。":
         "Controls how many blocks across the image are degraded.",
     "每個方塊中加入的隨機雜訊強度。": "Amount of random noise added to each block.",
@@ -355,6 +396,27 @@ PHRASE_EN = (
     ("局部分割完成", "Area split complete"),
     ("局部分割失敗", "Area split failed"),
     ("正在產生劣化預覽", "Generating degradation preview"),
+    ("製作劣化碎片進度", "Degraded Fragment Progress"),
+    ("劣化碎片完成", "Degraded fragments complete"),
+    ("劣化碎片", "Degraded fragments"),
+    ("分析碎片拼接邊界", "Analyzing fragment seams"),
+    ("加入細微錯位效果", "Adding subtle offsets"),
+    ("完成劣化碎片接縫", "Finishing degraded fragment seams"),
+    ("正在加入細微接縫與錯位", "Adding subtle seams and offsets"),
+    ("正在加入輪廓缺口與錯位線段", "Adding outline gap and offset segments"),
+    ("加入輪廓錯位線段", "Adding outline offset segments"),
+    ("完成輪廓缺口線段", "Finishing outline gap segments"),
+    ("輪廓線段處理失敗", "Outline segment processing failed"),
+    ("已加入輪廓缺口與錯位線段", "outline gap and offset segments added"),
+    ("細微接縫處理失敗", "Subtle seam processing failed"),
+    ("已加入細微接縫與錯位", "subtle seams and offsets added"),
+    ("劣化來源圖", "degraded source"),
+    ("已套用方案", "Plan applied"),
+    ("已儲存方案", "Plan saved"),
+    ("已刪除方案", "Plan deleted"),
+    ("部分對應不存在", "some mappings are unavailable"),
+    ("方案列數", "plan rows"),
+    ("目前碎片", "current fragments"),
     ("劣化預覽（尚未掛載）", "Degradation preview (not mounted)"),
     ("已掛載劣化圖；後續拆解將用它產生干擾像素", "Degraded sample mounted for subsequent splitting"),
     ("已掛載干擾像素", "Sample mounted"),
@@ -565,6 +627,27 @@ def tr(text):
     match = re.fullmatch(r"遮罩尺寸 (.+) 與圖片尺寸 (.+) 不一致", text)
     if match:
         return f"Mask dimensions {match.group(1)} do not match image dimensions {match.group(2)}."
+    match = re.fullmatch(r"已儲存方案「(.+)」，共 (\d+) 個碎片對應。", text)
+    if match:
+        return f'Saved plan "{match.group(1)}" with {match.group(2)} fragment mappings.'
+    match = re.fullmatch(r"已刪除方案「(.+)」。", text)
+    if match:
+        return f'Deleted plan "{match.group(1)}".'
+    match = re.fullmatch(r"已套用方案「(.+)」，共 (\d+) 個碎片對應。", text)
+    if match:
+        return f'Applied plan "{match.group(1)}" to {match.group(2)} fragments.'
+    match = re.fullmatch(r"已套用方案「(.+)」的 (\d+) 列；部分對應不存在：(.+)", text)
+    if match:
+        return f'Applied {match.group(2)} rows from plan "{match.group(1)}"; unavailable mappings: {match.group(3)}'
+    match = re.fullmatch(r"方案「(.+)」已存在，是否覆蓋？", text)
+    if match:
+        return f'Plan "{match.group(1)}" already exists. Overwrite it?'
+    match = re.fullmatch(r"確定要刪除方案「(.+)」嗎？", text)
+    if match:
+        return f'Delete plan "{match.group(1)}"?'
+    match = re.fullmatch(r"「(.+)」尚未完整選擇 PSD 檔案與圖層", text)
+    if match:
+        return f'"{match.group(1)}" does not have both a PSD file and layer selected.'
     translated = "\n".join(EXACT_EN.get(line, line) for line in text.split("\n"))
     for source, target in PHRASE_EN:
         translated = translated.replace(source, target)
