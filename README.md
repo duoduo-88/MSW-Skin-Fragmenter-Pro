@@ -33,6 +33,10 @@ Fragmentation and visual interference are obfuscation measures, not encryption o
 
 Use this software only with assets you own or are authorized to process. The authors do not endorse copyright infringement, unauthorized extraction, or circumvention of third-party protections.
 
+## Support
+
+If this project is useful to you, you can support DuoDuo on [Ko-fi](https://ko-fi.com/duoduo88).
+
 ## License
 
 Project source code is released under the [MIT License](LICENSE). Bundled third-party components retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
