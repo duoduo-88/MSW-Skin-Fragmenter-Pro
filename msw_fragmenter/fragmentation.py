@@ -89,10 +89,23 @@ class MaskWorkflowStages:
         return numpy_alpha_composite(self.primary_outer, self.secondary_inner)
 
 
-def build_mask_workflow_stages(main_image, primary_mask, secondary_mask=None):
+def build_mask_workflow_stages(
+    main_image,
+    primary_mask=None,
+    secondary_mask=None,
+    *,
+    primary_overflow=False,
+    block_size=1,
+    random_factor=1,
+    seed=None,
+):
     """按「主要內外 → 次要內外 → 外框分片」建立互不省略的階段資料。"""
     main = np.asarray(main_image, dtype=np.uint8)
-    primary = np.asarray(primary_mask, dtype=np.uint8)
+    primary = (
+        np.asarray(primary_mask, dtype=np.uint8)
+        if primary_mask is not None
+        else None
+    )
     secondary = (
         np.asarray(secondary_mask, dtype=np.uint8)
         if secondary_mask is not None
@@ -101,35 +114,57 @@ def build_mask_workflow_stages(main_image, primary_mask, secondary_mask=None):
 
     if main.ndim != 3 or main.shape[2] < 4:
         raise ValueError("主圖必須是 RGBA 圖片")
-    if primary.shape[:2] != main.shape[:2]:
+    if primary is not None and primary.shape[:2] != main.shape[:2]:
         raise ValueError("主體遮罩尺寸必須與主圖一致")
     if secondary is not None and secondary.shape[:2] != main.shape[:2]:
         raise ValueError("次要遮罩尺寸必須與主圖一致")
-    if primary.ndim != 3 or primary.shape[2] < 4:
+    if primary is not None and (primary.ndim != 3 or primary.shape[2] < 4):
         raise ValueError("主體遮罩必須是 RGBA 圖片")
     if secondary is not None and (secondary.ndim != 3 or secondary.shape[2] < 4):
         raise ValueError("次要遮罩必須是 RGBA 圖片")
 
     main_visible = main[..., 3] > 0
-    primary_area = (primary[..., 3] > 0) & main_visible
+    if primary is None and secondary is None:
+        raise ValueError("遮罩流程至少需要一張遮罩")
+    primary_area = (
+        (primary[..., 3] > 0) & main_visible
+        if primary is not None
+        else main_visible.copy()
+    )
     secondary_area = (
         (secondary[..., 3] > 0) & primary_area
         if secondary is not None
         else np.zeros(main.shape[:2], dtype=bool)
     )
-    outer_area = main_visible & ~primary_area
+    outer_area = (
+        main_visible & ~primary_area
+        if primary is not None
+        else np.zeros(main.shape[:2], dtype=bool)
+    )
     inner_frame_area = primary_area & ~secondary_area
 
-    if not np.any(primary_area):
+    if primary is not None and not np.any(primary_area):
         raise ValueError("主體遮罩沒有覆蓋主圖的任何不透明像素")
     if secondary is not None and not np.any(secondary_area):
         raise ValueError("次要遮罩在主體遮罩內沒有任何有效範圍")
     if not np.any(inner_frame_area):
         raise ValueError("主體遮罩內、次要遮罩外沒有可拆分的像素")
 
-    # 階段 1：主要遮罩嚴格切成外框與內部，不允許溢出。
+    # 階段 1：主要內部永遠嚴格保留；只有外框可依開關向內部溢出。
     primary_outer = np.zeros_like(main)
     primary_outer[outer_area] = main[outer_area]
+    if primary_overflow and np.any(outer_area):
+        overflow_result = split_fragments(
+            main,
+            outer_area,
+            1,
+            block_size,
+            random_factor,
+            strict_mask=False,
+            seed=seed,
+        )
+        if overflow_result:
+            primary_outer = overflow_result[0]
     primary_inner = np.zeros_like(main)
     primary_inner[primary_area] = main[primary_area]
 

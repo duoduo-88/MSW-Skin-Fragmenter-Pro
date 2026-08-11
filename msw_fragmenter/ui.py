@@ -1184,25 +1184,31 @@ class MainWindow(QtWidgets.QWidget):
         self.del_mask_btn.clicked.connect(self.del_mask)
         self.del_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
 
-        # 舊局部分割仍會讀取此狀態；自動遮罩流程固定使用不溢出的主體範圍。
+        # 舊的非自動分割收尾仍讀取此狀態；新的遮罩流程使用各自的溢出開關。
         self.mask_crop_cb = QtWidgets.QCheckBox("不溢出")
         self.mask_crop_cb.setChecked(True)
         self.mask_crop_cb.hide()
 
+        self.primary_overflow_cb = QtWidgets.QCheckBox("溢出")
+        self.primary_overflow_cb.setChecked(False)
+        self.primary_overflow_cb.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
+        )
         self.invert_mask_cb = QtWidgets.QCheckBox("反轉")
         self.invert_mask_cb.setChecked(False)
         self.invert_mask_cb.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         self.invert_mask_cb.stateChanged.connect(self.reload_mask_with_invert)
 
         help_btn = QHelpButton(
-            "固定處理順序：先由主體遮罩把主圖嚴格拆成外框與內部（不溢出）；"
-            "再由次要遮罩處理這張內部圖；最後才拆外框碎片、產生干擾及合成第一張。"
+            "遮罩流程會依已載入的遮罩執行：只載入主體遮罩時，第一張為主體外框，主體內部拆成後續碎片；"
+            "只載入次要遮罩時，第一張為次要遮罩內部，次要外框拆成後續碎片；兩張都有時，依「主要內／外 → "
+            "次要內／外」順序處理。"
             "\n\n"
-            "外框與次要遮罩保留區會在處理完成後合進清單最上方碎片；初次拆解的名稱仍為碎片 1～N，共 N 張。"
+            "主體「溢出」只讓主體外框在主要內／外分離時向內部延伸，預設關閉。兩種溢出都不會延後到最終碎片拆分。"
             "\n\n"
-            "遮罩必須是 PNG，且大小與主圖完全一致；alpha 大於 0 的像素視為遮罩範圍。只載入主體遮罩也可以執行。"
+            "遮罩必須是 PNG，且大小與主圖完全一致；alpha 大於 0 的像素視為遮罩範圍。"
             "\n\n"
-            "若兩張遮罩都不載入，則執行基本拆分；次要遮罩不能單獨使用。"
+            "若兩張遮罩都不載入，則執行基本拆分。最終名稱仍為碎片 1～N，共 N 張。"
         )
         help_btn.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
         self.primary_mask_help_btn = help_btn
@@ -1210,6 +1216,7 @@ class MainWindow(QtWidgets.QWidget):
         mask_row = QtWidgets.QHBoxLayout()
         mask_row.addWidget(self.mask_btn, 2)
         mask_row.addWidget(self.del_mask_btn, 1)
+        mask_row.addWidget(self.primary_overflow_cb, 1)
         mask_row.addWidget(self.invert_mask_cb, 1)
         mask_row.addWidget(help_btn)
         ff.addRow("主體遮罩：", mask_row)
@@ -1223,17 +1230,23 @@ class MainWindow(QtWidgets.QWidget):
         self.del_secondary_mask_btn = QtWidgets.QPushButton("移除")
         self.del_secondary_mask_btn.clicked.connect(self.del_secondary_mask)
         self.del_secondary_mask_btn.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        self.secondary_overflow_cb = QtWidgets.QCheckBox("溢出")
+        self.secondary_overflow_cb.setChecked(True)
+        self.secondary_overflow_cb.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
+        )
         self.secondary_invert_mask_cb = QtWidgets.QCheckBox("反轉")
         self.secondary_invert_mask_cb.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
         )
         self.secondary_invert_mask_cb.stateChanged.connect(self.reload_secondary_mask_with_invert)
         secondary_help_btn = QHelpButton(
-            "次要遮罩只處理主體遮罩拆出的內部圖。其次要內部不溢出，會保留到最後與主體外框合成第一張；"
-            "次要外框只在這次內／外分離時允許溢進次要內部。"
-            "這次溢出會使用方塊尺寸與隨機度各一半的參數（最低為 1）。"
+            "次要遮罩可單獨使用；有主體遮罩時只處理主體內部，沒有主體遮罩時直接處理主圖。"
+            "次要內部會保留到第一張；次要外框拆成後續碎片。勾選「溢出」時，次要外框只在這次"
+            "內／外分離時溢進次要內部；預設開啟，並使用方塊尺寸與隨機度各一半的參數（最低為 1）。"
+            "關閉後會嚴格限制在次要外框範圍。"
             "完整次要外框產生後，才用原始參數拆成後續碎片；後續拆片不再溢出。\n\n"
-            "次要遮罩不能單獨使用。勾選「反轉」可交換透明與不透明範圍。"
+            "勾選「反轉」可交換透明與不透明範圍。"
         )
         secondary_help_btn.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred
@@ -1243,6 +1256,7 @@ class MainWindow(QtWidgets.QWidget):
         secondary_mask_row = QtWidgets.QHBoxLayout()
         secondary_mask_row.addWidget(self.secondary_mask_btn, 2)
         secondary_mask_row.addWidget(self.del_secondary_mask_btn, 1)
+        secondary_mask_row.addWidget(self.secondary_overflow_cb, 1)
         secondary_mask_row.addWidget(self.secondary_invert_mask_cb, 1)
         secondary_mask_row.addWidget(secondary_help_btn)
         ff.addRow("次要遮罩：", secondary_mask_row)
@@ -1483,14 +1497,6 @@ class MainWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, "未框選區域", "請在左側預覽用滑鼠右鍵拖曳框出一個區域後再按此鍵")
             return
 
-        if self.secondary_mask_img is not None and self.mask_img is None:
-            QtWidgets.QMessageBox.warning(
-                self,
-                "缺少主體遮罩",
-                "次要遮罩不能單獨用於局部分割；請載入主體遮罩或移除次要遮罩。",
-            )
-            return
-
         # === 新增：干擾像素覆蓋風險提示（可勾選本次不再顯示） ===
         if not self._confirm_partial_split_warning():
             return
@@ -1502,16 +1508,22 @@ class MainWindow(QtWidgets.QWidget):
         x = max(0, min(x, W-1)); y = max(0, min(y, H-1))
         w = max(1, min(w, W-x)); h = max(1, min(h, H-y))
 
-        # 2) 依全圖流程建立局部來源。雙遮罩的溢出只在次要內／外分離時建立，
-        #    後續分片會嚴格限制在該次得到的完整外框範圍。
+        # 2) 依全圖流程建立局部來源；兩種溢出只在各自的內／外分離時建立。
         primary_outer_crop = None
         secondary_inner_crop = None
         mask_crop = None
         strict_mask = True
-        if self.mask_img is not None:
+        blocksize = self.block_input.value()
+        rand_factor = self.rand_input.value()
+        if self.mask_img is not None or self.secondary_mask_img is not None:
             try:
                 stages = build_mask_workflow_stages(
-                    self.main_img, self.mask_img, self.secondary_mask_img
+                    self.main_img,
+                    self.mask_img,
+                    self.secondary_mask_img,
+                    primary_overflow=self.primary_overflow_cb.isChecked(),
+                    block_size=blocksize,
+                    random_factor=rand_factor,
                 )
             except ValueError as exc:
                 QtWidgets.QMessageBox.warning(self, "遮罩無法使用", str(exc))
@@ -1530,8 +1542,6 @@ class MainWindow(QtWidgets.QWidget):
         split_piece_count = (
             max(1, final_count - 1) if has_mask_workflow else final_count
         )
-        blocksize = self.block_input.value()
-        rand_factor = self.rand_input.value()
 
         self._begin_fragment_progress(
             "局部分割進度", "局部分割：正在建立外框與碎片..."
@@ -1554,7 +1564,12 @@ class MainWindow(QtWidgets.QWidget):
                 blocksize,
                 rand_factor,
                 strict_mask=strict_mask,
-                secondary_overflow_mask=mask_crop,
+                secondary_overflow_mask=(
+                    mask_crop
+                    if mask_crop is not None
+                    and self.secondary_overflow_cb.isChecked()
+                    else None
+                ),
             )
             result_holder = {"imgs": None}
             wait_loop = QtCore.QEventLoop(self)
@@ -2358,19 +2373,20 @@ class MainWindow(QtWidgets.QWidget):
             return
         has_primary_mask = self.mask_img is not None
         has_secondary_mask = self.secondary_mask_img is not None
-        if has_secondary_mask and not has_primary_mask:
-            message = "次要遮罩必須搭配主體遮罩；請載入主體遮罩或移除次要遮罩"
-            self.set_status(message, False)
-            QtWidgets.QMessageBox.warning(self, "缺少主體遮罩", message)
-            return
 
-        self._auto_mask_workflow = has_primary_mask
+        block_sz = self.block_input.value()
+        rand_sz = self.rand_input.value()
+        final_count = self.num_input.value()
+        self._auto_mask_workflow = has_primary_mask or has_secondary_mask
         if self._auto_mask_workflow:
             try:
                 stages = build_mask_workflow_stages(
                     self.main_img,
                     self.mask_img,
                     self.secondary_mask_img if has_secondary_mask else None,
+                    primary_overflow=self.primary_overflow_cb.isChecked(),
+                    block_size=block_sz,
+                    random_factor=rand_sz,
                 )
             except ValueError as exc:
                 self.set_status(str(exc), False)
@@ -2403,9 +2419,6 @@ class MainWindow(QtWidgets.QWidget):
             self.fragment_visibility.clear()
             self.trash_tab.refresh()
 
-        block_sz = self.block_input.value()
-        rand_sz = self.rand_input.value()
-        final_count = self.num_input.value()
         split_piece_count = (
             max(1, final_count - 1) if self._auto_mask_workflow else final_count
         )
@@ -2440,7 +2453,12 @@ class MainWindow(QtWidgets.QWidget):
             block_sz,
             rand_sz,
             strict_mask=True,
-            secondary_overflow_mask=split_mask,
+            secondary_overflow_mask=(
+                split_mask
+                if split_mask is not None
+                and self.secondary_overflow_cb.isChecked()
+                else None
+            ),
         )
         self.split_thread.update_progress.connect(self._fragment_progress_update)
         self.split_thread.result.connect(self._auto_split_done)
